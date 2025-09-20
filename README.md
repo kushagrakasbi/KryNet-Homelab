@@ -1,13 +1,4 @@
 <br/><p align="center"><h1 align="center">KryNet Homelab: A Self-Hosted Private Cloud</h1><p align="center">    This repository documents the architecture and services of my personal home server, built on a repurposed gaming PC to create a private, powerful, and versatile cloud environment.
-    <br />
-    <br />
-    <a href="#-hardware-specifications">Hardware</a>
-    ·
-    <a href="#-storage-architecture">Storage</a>
-    ·
-    <a href="#-software--services">Services</a>
-    ·
-    <a href="#-networking-overview">Networking</a>
   </p>
 </p>
 
