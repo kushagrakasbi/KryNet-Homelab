@@ -1,4 +1,4 @@
-`<br/><p align="center"><h1 align="center">KryNet Homelab: A Self-Hosted Private Cloud</h1><p align="center">    This repository documents the architecture and services of my personal home server, built on a repurposed gaming PC to create a private, powerful, and versatile cloud environment.
+<br/><p align="center"><h1 align="center">KryNet Homelab: A Self-Hosted Private Cloud</h1><p align="center">    This repository documents the architecture and services of my personal home server, built on a repurposed gaming PC to create a private, powerful, and versatile cloud environment.
     <br />
     <br />
     <a href="#-hardware-specifications">Hardware</a>
@@ -113,7 +113,7 @@ Here is the step-by-step data flow:
 7.  **Subtitles:** **Bazarr** detects the new file in the library, scans it, and downloads matching subtitles in the desired languages.
 8.  **Library Update:** **Jellyfin** detects the new, organized file in the media library, scans its metadata and artwork, and makes it available for streaming across all client devices.
 
-This entire process is visualized below:`
+This entire process is visualized below:
 
 ````mermaid
 graph TD
@@ -179,7 +179,7 @@ This flow is visualized below:
 
 Code snippet
 
-```
+```mermaid
 graph TD
     subgraph "User's Browser"
         A[User] -- Interacts with --> B(OpenWebUI Interface);
@@ -193,9 +193,9 @@ graph TD
     end
 
     subgraph "External Cloud Services"
-        D --- E(OpenAI - GPT-4);
-        D --- F(Anthropic - Claude 3);
-        D --- G(Google - Gemini);
+        D --- E(OpenAI - GPT-5);
+        D --- F(Anthropic - Claude 4);
+        D --- G(Google - Gemini 2.5 Pro);
     end
 ```
 
