@@ -179,7 +179,8 @@ This flow is visualized below:
 
 Code snippet
 
-`graph TD
+```
+graph TD
     subgraph "User's Browser"
         A[User] -- Interacts with --> B(OpenWebUI Interface);
     end
@@ -195,7 +196,8 @@ Code snippet
         D --- E(OpenAI - GPT-4);
         D --- F(Anthropic - Claude 3);
         D --- G(Google - Gemini);
-    end`
+    end
+```
 
 ### Monitoring & Utilities
 
