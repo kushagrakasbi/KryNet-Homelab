@@ -32,6 +32,15 @@ Your primary TrueNAS Scale server is built on older PC hardware, repurposed for 
 - **IP Address:** `192.168.0.212`
 
 ---
+### Key Installation Videos Referenced
+
+1. [TrueNAS Scale via Pendrive](https://youtu.be/9O3E9U0DFWo?si=F4lXICvo6wHfy86z)
+2. [Tailscale via Portainer](https://youtu.be/lajmJtNycgQ?si=ijGmnjDE3orXkshz)
+3. [NPM + Cloudflare + Tailscale Setup](https://youtu.be/Y7Z-RnM77tA?si=O_ksxbD4fXHtLG8g)
+4. [OpenWebUI + LiteLLM](https://www.youtube.com/watch?v=JJ_0-pAOIEk)
+5. [Immich on TrueNAS](https://www.youtube.com/watch?v=TqjlUocu6ZI)
+6. [ARR Stack Setup](https://www.youtube.com/watch?v=twJDyoj0tDc)
+---
 
 ## 💾 TrueNAS Scale Configuration
 
@@ -56,6 +65,56 @@ Your primary TrueNAS Scale server is built on older PC hardware, repurposed for 
     - **Disks:** 1x 1TB WD Blue HDD
     - **Configuration:** ZFS Stripe (single disk)
     - **Primary Use:** General storage (likely for temporary data or less critical files).
+
+## 🗂️ Storage Structure
+
+### Pool: Andromeda (2x4TB Mirror)
+
+`/mnt/andromeda/
+├── apps/
+│   └── immich/
+│       ├── uploads/      # Photo/video storage
+│       ├── ml/          # ML model cache
+│       └── db/          # PostgreSQL data`
+
+### Pool: Orion (2x2TB Mirror)
+
+`/mnt/orion/
+├── apps-config/         # All Docker configs
+│   ├── npm/
+│   ├── homarr/
+│   ├── jellyfin/
+│   ├── radarr/
+│   ├── sonarr/
+│   ├── prowlarr/
+│   ├── bazarr/
+│   ├── qbittorrent/
+│   ├── sabnzbd/
+│   ├── jellyseerr/
+│   ├── whisparr/
+│   ├── openwebui/
+│   ├── uptime-kuma/
+│   ├── prometheus/
+│   ├── gluetun/
+│   ├── tailscale/
+│   ├── adguardhome/
+│   ├── adguardhome-sync/
+│   └── homeassistant/
+├── downloads/           # Torrent downloads
+├── usenet/
+│   ├── complete/       # Completed usenet downloads
+│   └── incomplete/     # In-progress downloads
+└── media/
+    ├── Movies/
+    ├── TVShows/
+    ├── Anime/
+    ├── Documentaries/
+    └── Books/`
+
+### Pool: Comet (1TB Stripe)
+
+`/mnt/comet/
+└── general/            # General storage`
 
 ---
 
@@ -136,6 +195,55 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
     5. The `cloudflared` container, typically on the host network, directs the traffic to the appropriate internal service (e.g., Jellyfin on port `8096`).
     6. Jellyfin responds.
 
+### Domain Configuration
+
+### Primary Domain: kkasbi.site
+
+**Registrar/DNS:** Cloudflare
+
+**Access Patterns:**
+
+1. **Direct Access (*.kkasbi.site)** - Public internet via Cloudflare Tunnel
+2. **Local Network (*.local.kkasbi.site)** - LAN access via NPM
+3. **Tailscale VPN (*.tail.kkasbi.site)** - Secure remote access via Tailnet
+
+### Secondary Domain: krynet.cc
+
+**Configuration:** Split-Horizon DNS
+
+- **External:** Points to Tailscale public IP → Tailscale → Server
+- **Internal:** DNS Rewrite in AdGuard → 192.168.0.100 → NPM → Service
+- **Purpose:** Single URL for both internal and external access
+
+### SSL/TLS Configuration
+
+**Certificates:** Let's Encrypt via Cloudflare DNS Challenge
+**Managed by:** Nginx Proxy Manager
+
+**Wildcard Certificates:**
+
+- .local.kkasbi.site
+- .tail.kkasbi.site
+- .kkasbi.site
+- .krynet.cc
+
+### DNS Configuration
+
+**Primary DNS:** AdGuard Home (192.168.0.100:53) - Port 7000 for UI
+**Secondary DNS:** AdGuard Home on Windows Server (192.168.0.212:53) - Port 7002 for UI
+**Sync:** AdGuard Home Sync (Port 8082) - Keeps configurations synchronized
+
+**Router DNS Settings:**
+
+- Primary: 192.168.0.100
+- Secondary: 192.168.0.212
+
+**Split-Horizon DNS Rules (AdGuard):**
+
+`DNS Rewrite Rules:
+*.krynet.cc → 192.168.0.100
+(External DNS has *.krynet.cc → Tailscale Public IP)`
+
 ---
 
 ## 🛠️ Applications & Services
@@ -158,6 +266,45 @@ This section lists all installed applications, their functionality, networking d
         - **Domain:** `portainer2.krynet.cc`
         - **Functionality:** Manages Docker containers on the Windows server.
 - **`kry_net` Docker Network:** An external Docker network used by most services for inter-container communication on the TrueNAS server.
+
+---
+## 🎯 Primary Use Cases
+
+### 1. Photo & Video Management (Immich)
+
+- **Storage:** Andromeda pool (8TB usable in mirror)
+- **AI Features:** Face recognition, object detection (CUDA accelerated)
+- **Access:** Mobile app, web interface
+- **Backup:** Mirrored across 2x4TB drives
+
+### 2. Media Automation Pipeline
+
+**Workflow:**
+
+1. Browse/request media via Jellyseerr
+2. Jellyseerr notifies Radarr/Sonarr
+3. Radarr/Sonarr searches via Prowlarr
+4. Downloads via qBittorrent (torrents) or SABnzbd (usenet)
+5. All downloads protected by Gluetun VPN
+6. Automatic organization and renaming
+7. Bazarr fetches subtitles
+8. Media appears in Jellyfin
+9. Stream via Jellyfin on any device
+
+### 3. DNS Ad-Blocking & Split-Horizon
+
+- Network-wide ad blocking via AdGuard
+- Single URLs work everywhere (krynet.cc)
+- Automatic failover with secondary DNS
+- Custom DNS rules for local services
+
+### 4. AI/LLM Aggregation
+
+- Single interface (OpenWebUI) for multiple AI models
+- Cost tracking and usage monitoring via LiteLLM
+- Privacy: Self-hosted, data stays local
+- Access from anywhere via VPN
+---
 
 ### Core Use Cases & Associated Apps
 
@@ -844,4 +991,25 @@ DOCKER_CONFIG_PATH=/mnt/orion/apps-config
 DOCKER_DOWNLOADS_PATH=/mnt/orion/downloads
 DOCKER_USENET_PATH=/mnt/orion/usenet
 DOCKER_MEDIA_PATH=/mnt/orion/media
+
+# Database Credentials
+DB_PASSWORD=SonyIphone27!
+DB_USERNAME=postgres
+DB_DATABASE_NAME=immich
+
+# LiteLLM
+LITELLM_MASTER_KEY=[Your Master Key]
+LITELLM_SALT_KEY=[Your Salt Key]
+DATABASE_URL=postgresql://postgres:SonyIphone27!@192.168.0.100:5432/litellm
+
+# Surfshark VPN
+WIREGUARD_PRIVATE_KEY=[Your Private Key]
+WIREGUARD_ADDRESSES=[Your VPN Address]
+SERVER_COUNTRIES=[Your Preferred Countries]
+
+# Tailscale
+TS_AUTHKEY=[Your Auth Key]
+
+# Cloudflare
+CLOUDFLARE_TUNNEL_TOKEN=[Your Tunnel Token]
 ```
