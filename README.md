@@ -68,53 +68,6 @@ Your primary TrueNAS Scale server is built on older PC hardware, repurposed for 
 
 ---
 
-## 🗂️ Storage Structure
-The server utilizes three distinct ZFS pools, each with a specific purpose and data organization strategy.
-
-Pool: Andromeda (2x4TB Mirror)
-Dedicated pool for high-value media, primarily for Immich photo and video storage.
-
-Plaintext
-
-/mnt/andromeda/
-└── apps/
-    └── immich/
-        ├── uploads/      # Photo/video storage
-        ├── ml/           # ML model cache
-        └── db/           # PostgreSQL data
-Pool: Orion (2x2TB Mirror)
-The primary pool for application configurations, downloads, and general media libraries.
-
-Plaintext
-
-/mnt/orion/
-├── apps-config/         # All Docker configs
-│   ├── npm/
-│   ├── homarr/
-│   ├── jellyfin/
-│   ├── radarr/
-│   └── ... (etc.)
-├── downloads/           # Torrent downloads
-├── usenet/
-│   ├── complete/        # Completed usenet downloads
-│   └── incomplete/      # In-progress downloads
-└── media/
-    ├── Movies/
-    ├── TVShows/
-    ├── Anime/
-    ├── Documentaries/
-    └── Books/
-Pool: Comet (1TB Stripe)
-A single-disk pool for general-purpose or less critical storage needs.
-
-Plaintext
-
-/mnt/comet/
-└── general/            # General storage
-
-
----
-
 ## 🌐 Networking Architecture
 
 The networking setup is designed for flexible, secure, and unified access to services, catering to local network, remote VPN (Tailscale), and public internet access.
