@@ -66,55 +66,52 @@ Your primary TrueNAS Scale server is built on older PC hardware, repurposed for 
     - **Configuration:** ZFS Stripe (single disk)
     - **Primary Use:** General storage (likely for temporary data or less critical files).
 
+---
+
 ## 🗂️ Storage Structure
+The server utilizes three distinct ZFS pools, each with a specific purpose and data organization strategy.
 
-### Pool: Andromeda (2x4TB Mirror)
+Pool: Andromeda (2x4TB Mirror)
+Dedicated pool for high-value media, primarily for Immich photo and video storage.
 
-`/mnt/andromeda/
-├── apps/
-│   └── immich/
-│       ├── uploads/      # Photo/video storage
-│       ├── ml/          # ML model cache
-│       └── db/          # PostgreSQL data`
+Plaintext
 
-### Pool: Orion (2x2TB Mirror)
+/mnt/andromeda/
+└── apps/
+    └── immich/
+        ├── uploads/      # Photo/video storage
+        ├── ml/           # ML model cache
+        └── db/           # PostgreSQL data
+Pool: Orion (2x2TB Mirror)
+The primary pool for application configurations, downloads, and general media libraries.
 
-`/mnt/orion/
+Plaintext
+
+/mnt/orion/
 ├── apps-config/         # All Docker configs
 │   ├── npm/
 │   ├── homarr/
 │   ├── jellyfin/
 │   ├── radarr/
-│   ├── sonarr/
-│   ├── prowlarr/
-│   ├── bazarr/
-│   ├── qbittorrent/
-│   ├── sabnzbd/
-│   ├── jellyseerr/
-│   ├── whisparr/
-│   ├── openwebui/
-│   ├── uptime-kuma/
-│   ├── prometheus/
-│   ├── gluetun/
-│   ├── tailscale/
-│   ├── adguardhome/
-│   ├── adguardhome-sync/
-│   └── homeassistant/
+│   └── ... (etc.)
 ├── downloads/           # Torrent downloads
 ├── usenet/
-│   ├── complete/       # Completed usenet downloads
-│   └── incomplete/     # In-progress downloads
+│   ├── complete/        # Completed usenet downloads
+│   └── incomplete/      # In-progress downloads
 └── media/
     ├── Movies/
     ├── TVShows/
     ├── Anime/
     ├── Documentaries/
-    └── Books/`
+    └── Books/
+Pool: Comet (1TB Stripe)
+A single-disk pool for general-purpose or less critical storage needs.
 
-### Pool: Comet (1TB Stripe)
+Plaintext
 
-`/mnt/comet/
-└── general/            # General storage`
+/mnt/comet/
+└── general/            # General storage
+
 
 ---
 
@@ -246,38 +243,96 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
 
 ---
 
-📦 Service Inventory
-Core Infrastructure
-ServicePortDomainsPurposeTrueNAS ScaleHTTP: 88, HTTPS: 444server.kkasbi.site, server.local.kkasbi.site, server.tail.kkasbi.site, server.krynet.ccNAS ManagementPortainer (TrueNAS)9443portainer.kkasbi.site, portainer.local.kkasbi.site, portainer.tail.kkasbi.site, portainer.krynet.ccDocker ManagementPortainer (Windows)9444portainer2.krynet.ccWindows Docker ManagementNginx Proxy Manager80, 443, UI: 81npm.kkasbi.site, npm.local.kkasbi.site, npm.tail.kkasbi.site, npm.krynet.ccReverse Proxy & SSLCloudflaredN/A (host network)N/ACloudflare TunnelTailscaleN/A (host network)N/AVPN & Subnet Router
-Monitoring & Logs
-ServicePortDomainsPurposeUptime Kuma3001monitor.kkasbi.site, monitor.local.kkasbi.site, monitor.tail.kkasbi.site, monitor.krynet.ccService MonitoringPrometheus9090prometheus.local.kkasbi.site, prometheus.tail.kkasbi.site, prometheus.krynet.ccMetrics CollectionDozzle8088logs.kkasbi.site, logs.local.kkasbi.site, logs.tail.kkasbi.site, logs.krynet.ccDocker LogsGoAccess7880npmlogs.local.kkasbi.site, npmlogs.tail.kkasbi.site, npmlogs.krynet.ccNPM Log AnalyticsHomarr7575dash.kkasbi.site, dash.local.kkasbi.site, dash.tail.kkasbi.site, dash.krynet.ccDashboardWatchtowerN/AN/AContainer Auto-Update
-Media Stack
-ServicePortDomainsNetwork ModePurposeJellyfin8096media.kkasbi.site, media.local.kkasbi.site, media.tail.kkasbi.site, media.krynet.ccBridge (kry_net)Media ServerJellyseerr5055request.kkasbi.site, request.local.kkasbi.site, request.tail.kkasbi.site, request.krynet.ccservice:gluetun (VPN)Media RequestsRadarr7878radarr.local.kkasbi.site, radarr.tail.kkasbi.site, radarr.krynet.ccBridge (kry_net)Movie ManagementSonarr8989sonarr.local.kkasbi.site, sonarr.tail.kkasbi.site, sonarr.krynet.ccBridge (kry_net)TV Show ManagementWhisparr6969whisparr.local.kkasbi.site, whisparr.tail.kkasbi.site, whisparr.krynet.ccservice:gluetun (VPN)Adult Content ManagementBazarr6767bazarr.local.kkasbi.site, bazarr.tail.kkasbi.site, bazarr.krynet.ccBridge (kry_net)Subtitle ManagementProwlarr9696indexer.local.kkasbi.site, indexer.tail.kkasbi.site, indexer.krynet.ccBridge (kry_net)Indexer ManagerqBittorrent8080downloads.local.kkasbi.site, downloads.tail.kkasbi.site, downloads.krynet.ccservice:gluetun (VPN)Torrent ClientSABnzbd8085sabnzbd.local.kkasbi.site, sabnzbd.tail.kkasbi.site, sabnzbd.krynet.ccservice:gluetun (VPN)Usenet ClientFlareSolverr8191N/ABridge (kry_net)Cloudflare BypassGluetunN/AN/ABridge (kry_net)VPN Gateway
-Photo Management
-ServicePortDomainsPurposeImmich2283photos.kkasbi.site, photos.local.kkasbi.site, photos.tail.kkasbi.site, photos.krynet.ccPhoto ManagementImmich MLN/A (internal)N/AAI/ML Processing (CUDA)Immich RedisN/A (internal)N/ACachingImmich PostgreSQL5432 (exposed)N/ADatabaseImmich Power Tools8001N/AAdmin Tools
-AI Stack
-ServicePortDomainsPurposeOpenWebUI3999owui.kkasbi.site, owui.local.kkasbi.site, owui.tail.kkasbi.site, owui.krynet.ccAI Chat InterfaceLiteLLM4000litellm.local.kkasbi.site, litellm.tail.kkasbi.site, litellm.krynet.ccLLM Proxy/Gateway
-Connected Models:
+### 📦 Service Inventory
 
-Claude (Anthropic)
-ChatGPT (OpenAI)
-Gemini (Google)
+This is a comprehensive list of all services running on the home server setup.
 
-Database: Uses Immich PostgreSQL (separate DB: litellm)
-Master Key: ${LITELLM_MASTER_KEY} (in stack.env)
-Home Automation
-ServicePortDomainsPurposeHome Assistant8123ha.kkasbi.site, ha.local.kkasbi.site, ha.tail.kkasbi.site, ha.krynet.ccHome Automation Hub
-Integrated Devices:
+### Core Infrastructure
 
-SmartLife devices
-TP-Link Tapo
-Wiz bulbs
-Amazon Alexa
-Various smart plugs
+| Service | Port(s) | Domains | Purpose |
+| --- | --- | --- | --- |
+| **TrueNAS Scale** | `88` (HTTP), `444` (HTTPS) | `server.krynet.cc` | NAS Management |
+| **Portainer (TrueNAS)** | `9443` | `portainer.krynet.cc` | Docker Management (Primary) |
+| **Portainer (Windows)** | `9444` | `portainer2.krynet.cc` | Docker Management (Secondary) |
+| **Nginx Proxy Manager** | `80`, `443`, `81` (UI) | `npm.krynet.cc` | Reverse Proxy & SSL |
+| **Cloudflared** | N/A (host) | N/A | Cloudflare Tunnel |
+| **Tailscale** | N/A (host) | N/A | VPN & Subnet Router |
 
-Mobile App: NZB360 configured with Radarr, Sonarr, Jellyseerr
-DNS & Network Services
-ServicePortDomainsLocationPurposeAdGuard Home (Primary)DNS: 53, UI: 7000adguard.kkasbi.site, adguard.krynet.ccTrueNASPrimary DNS/Ad BlockingAdGuard Home (Secondary)DNS: 53, UI: 7002adguard2.krynet.ccWindows ServerSecondary DNS/Ad BlockingAdGuard Home Sync8082N/ATrueNASConfig Synchronization
+Export to Sheets
+
+### Monitoring & Logs
+
+| Service | Port | Domains | Purpose |
+| --- | --- | --- | --- |
+| **Uptime Kuma** | `3001` | `monitor.krynet.cc` | Service Monitoring |
+| **Prometheus** | `9090` | `prometheus.krynet.cc` | Metrics Collection |
+| **Dozzle** | `8088` | `logs.krynet.cc` | Docker Logs Viewer |
+| **GoAccess** | `7880` | `npmlogs.krynet.cc` | NPM Log Analytics |
+| **Homarr** | `7575` | `dash.krynet.cc` | Central Dashboard |
+| **Watchtower** | N/A | N/A | Container Auto-Updater |
+
+Export to Sheets
+
+### 🎬 Media Stack
+
+| Service | Port | Domains | Network Mode | Purpose |
+| --- | --- | --- | --- | --- |
+| **Jellyfin** | `8096` | `media.krynet.cc` | Bridge (`kry_net`) | Media Server |
+| **Jellyseerr** | `5055` | `request.krynet.cc` | `service:gluetun` (VPN) | Media Requests |
+| **Radarr** | `7878` | `radarr.krynet.cc` | Bridge (`kry_net`) | Movie Management |
+| **Sonarr** | `8989` | `sonarr.krynet.cc` | Bridge (`kry_net`) | TV Show Management |
+| **Whisparr** | `6969` | `whisparr.krynet.cc` | `service:gluetun` (VPN) | Music Management |
+| **Bazarr** | `6767` | `bazarr.krynet.cc` | Bridge (`kry_net`) | Subtitle Management |
+| **Prowlarr** | `9696` | `indexer.krynet.cc` | Bridge (`kry_net`) | Indexer Manager |
+| **qBittorrent** | `8080` | `downloads.krynet.cc` | `service:gluetun` (VPN) | Torrent Client |
+| **SABnzbd** | `8085` | `sabnzbd.krynet.cc` | `service:gluetun` (VPN) | Usenet Client |
+| **FlareSolverr** | `8191` | `flaresolverr.krynet.cc` | Bridge (`kry_net`) | Cloudflare Bypass |
+| **Gluetun** | N/A | N/A | Bridge (`kry_net`) | VPN Gateway |
+
+Export to Sheets
+
+### 📸 Photo Management
+
+| Service | Port | Domains | Purpose |
+| --- | --- | --- | --- |
+| **Immich Server** | `2283` | `photos.krynet.cc` | Photo Management |
+| **Immich ML** | Internal | N/A | AI/ML Processing (CUDA) |
+| **Immich Redis** | Internal | N/A | Caching |
+| **Immich PostgreSQL** | `5432` | N/A | Database |
+| **Immich Power Tools** | `8001` | N/A | Admin Tools |
+
+Export to Sheets
+
+### 🧠 AI Stack
+
+| Service | Port | Domains | Purpose |
+| --- | --- | --- | --- |
+| **OpenWebUI** | `3999` | `owui.krynet.cc` | AI Chat Interface |
+| **LiteLLM** | `4000` | `litellm.krynet.cc` | LLM Proxy/Gateway |
+
+Export to Sheets
+
+- **Connected Models:** Claude (Anthropic), ChatGPT (OpenAI), Gemini (Google)
+- **Database:** Uses the main PostgreSQL instance (separate DB: `litellm`)
+
+### 🏠 Home Automation
+
+| Service | Port | Domains | Purpose |
+| --- | --- | --- | --- |
+| **Home Assistant** | `8123` | `ha.krynet.cc` | Home Automation Hub |
+
+Export to Sheets
+
+- **Integrated Devices:** SmartLife, TP-Link Tapo, Wiz, Amazon Alexa, various smart plugs.
+- **Mobile App:** NZB360 is configured with Radarr, Sonarr, and Jellyseerr for on-the-go management.
+
+### 🌐 DNS & Network Services
+
+| Service | Port(s) | Domains | Location | Purpose |
+| --- | --- | --- | --- | --- |
+| **AdGuard Home (Primary)** | DNS: `53`, UI: `7000` | `adguard.krynet.cc` | TrueNAS | Primary DNS & Ad Blocking |
+| **AdGuard Home (Secondary)** | DNS: `53`, UI: `7002` | `adguard2.krynet.cc` | Windows Server | Secondary DNS & Ad Blocking |
+| **AdGuard Home Sync** | `8082` | N/A | TrueNAS | Config Synchronization |
 
 ---
 ## 🛠️ Applications & Services
