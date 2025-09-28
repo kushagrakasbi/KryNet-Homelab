@@ -246,6 +246,40 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
 
 ---
 
+📦 Service Inventory
+Core Infrastructure
+ServicePortDomainsPurposeTrueNAS ScaleHTTP: 88, HTTPS: 444server.kkasbi.site, server.local.kkasbi.site, server.tail.kkasbi.site, server.krynet.ccNAS ManagementPortainer (TrueNAS)9443portainer.kkasbi.site, portainer.local.kkasbi.site, portainer.tail.kkasbi.site, portainer.krynet.ccDocker ManagementPortainer (Windows)9444portainer2.krynet.ccWindows Docker ManagementNginx Proxy Manager80, 443, UI: 81npm.kkasbi.site, npm.local.kkasbi.site, npm.tail.kkasbi.site, npm.krynet.ccReverse Proxy & SSLCloudflaredN/A (host network)N/ACloudflare TunnelTailscaleN/A (host network)N/AVPN & Subnet Router
+Monitoring & Logs
+ServicePortDomainsPurposeUptime Kuma3001monitor.kkasbi.site, monitor.local.kkasbi.site, monitor.tail.kkasbi.site, monitor.krynet.ccService MonitoringPrometheus9090prometheus.local.kkasbi.site, prometheus.tail.kkasbi.site, prometheus.krynet.ccMetrics CollectionDozzle8088logs.kkasbi.site, logs.local.kkasbi.site, logs.tail.kkasbi.site, logs.krynet.ccDocker LogsGoAccess7880npmlogs.local.kkasbi.site, npmlogs.tail.kkasbi.site, npmlogs.krynet.ccNPM Log AnalyticsHomarr7575dash.kkasbi.site, dash.local.kkasbi.site, dash.tail.kkasbi.site, dash.krynet.ccDashboardWatchtowerN/AN/AContainer Auto-Update
+Media Stack
+ServicePortDomainsNetwork ModePurposeJellyfin8096media.kkasbi.site, media.local.kkasbi.site, media.tail.kkasbi.site, media.krynet.ccBridge (kry_net)Media ServerJellyseerr5055request.kkasbi.site, request.local.kkasbi.site, request.tail.kkasbi.site, request.krynet.ccservice:gluetun (VPN)Media RequestsRadarr7878radarr.local.kkasbi.site, radarr.tail.kkasbi.site, radarr.krynet.ccBridge (kry_net)Movie ManagementSonarr8989sonarr.local.kkasbi.site, sonarr.tail.kkasbi.site, sonarr.krynet.ccBridge (kry_net)TV Show ManagementWhisparr6969whisparr.local.kkasbi.site, whisparr.tail.kkasbi.site, whisparr.krynet.ccservice:gluetun (VPN)Adult Content ManagementBazarr6767bazarr.local.kkasbi.site, bazarr.tail.kkasbi.site, bazarr.krynet.ccBridge (kry_net)Subtitle ManagementProwlarr9696indexer.local.kkasbi.site, indexer.tail.kkasbi.site, indexer.krynet.ccBridge (kry_net)Indexer ManagerqBittorrent8080downloads.local.kkasbi.site, downloads.tail.kkasbi.site, downloads.krynet.ccservice:gluetun (VPN)Torrent ClientSABnzbd8085sabnzbd.local.kkasbi.site, sabnzbd.tail.kkasbi.site, sabnzbd.krynet.ccservice:gluetun (VPN)Usenet ClientFlareSolverr8191N/ABridge (kry_net)Cloudflare BypassGluetunN/AN/ABridge (kry_net)VPN Gateway
+Photo Management
+ServicePortDomainsPurposeImmich2283photos.kkasbi.site, photos.local.kkasbi.site, photos.tail.kkasbi.site, photos.krynet.ccPhoto ManagementImmich MLN/A (internal)N/AAI/ML Processing (CUDA)Immich RedisN/A (internal)N/ACachingImmich PostgreSQL5432 (exposed)N/ADatabaseImmich Power Tools8001N/AAdmin Tools
+AI Stack
+ServicePortDomainsPurposeOpenWebUI3999owui.kkasbi.site, owui.local.kkasbi.site, owui.tail.kkasbi.site, owui.krynet.ccAI Chat InterfaceLiteLLM4000litellm.local.kkasbi.site, litellm.tail.kkasbi.site, litellm.krynet.ccLLM Proxy/Gateway
+Connected Models:
+
+Claude (Anthropic)
+ChatGPT (OpenAI)
+Gemini (Google)
+
+Database: Uses Immich PostgreSQL (separate DB: litellm)
+Master Key: ${LITELLM_MASTER_KEY} (in stack.env)
+Home Automation
+ServicePortDomainsPurposeHome Assistant8123ha.kkasbi.site, ha.local.kkasbi.site, ha.tail.kkasbi.site, ha.krynet.ccHome Automation Hub
+Integrated Devices:
+
+SmartLife devices
+TP-Link Tapo
+Wiz bulbs
+Amazon Alexa
+Various smart plugs
+
+Mobile App: NZB360 configured with Radarr, Sonarr, Jellyseerr
+DNS & Network Services
+ServicePortDomainsLocationPurposeAdGuard Home (Primary)DNS: 53, UI: 7000adguard.kkasbi.site, adguard.krynet.ccTrueNASPrimary DNS/Ad BlockingAdGuard Home (Secondary)DNS: 53, UI: 7002adguard2.krynet.ccWindows ServerSecondary DNS/Ad BlockingAdGuard Home Sync8082N/ATrueNASConfig Synchronization
+
+---
 ## 🛠️ Applications & Services
 
 This section lists all installed applications, their functionality, networking details, and associated domains.
