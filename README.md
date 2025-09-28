@@ -145,7 +145,7 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
     5. The `cloudflared` container, typically on the host network, directs the traffic to the appropriate internal service (e.g., Jellyfin on port `8096`).
     6. Jellyfin responds.
 
-### Domain Configuration
+## 🌐 Domain Configuration
 
 ### Primary Domain: kkasbi.site
 
