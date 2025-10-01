@@ -1035,14 +1035,14 @@ DOCKER_USENET_PATH=/mnt/orion/usenet
 DOCKER_MEDIA_PATH=/mnt/orion/media
 
 # Database Credentials
-DB_PASSWORD=SonyIphone27!
+DB_PASSWORD=password
 DB_USERNAME=postgres
 DB_DATABASE_NAME=immich
 
 # LiteLLM
 LITELLM_MASTER_KEY=[Your Master Key]
 LITELLM_SALT_KEY=[Your Salt Key]
-DATABASE_URL=postgresql://postgres:SonyIphone27!@192.168.0.100:5432/litellm
+DATABASE_URL=postgresql://username:pass@192.168.0.100:5432/litellm
 
 # Surfshark VPN
 WIREGUARD_PRIVATE_KEY=[Your Private Key]
