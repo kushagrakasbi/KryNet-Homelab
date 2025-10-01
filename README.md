@@ -82,7 +82,7 @@ The networking setup is designed for flexible, secure, and unified access to ser
     - **Ports:** `80`, `443` (for proxying), `81` (for NPM UI).
     - **Location:** Installed via Portainer on the TrueNAS server, using `network_mode: host` to bind directly to ports 80/443.
 5. **Cloudflare:**
-    - **Domain:** `kkasbi.site`
+    - **Domain:** `primarydomain.com`
     - **Role:** DNS management, wildcard SSL certificate issuance (through NPM), Cloudflare Access for security, and Cloudflare Tunnels for secure public exposure of specific services.
     - **Google OAuth for Cloudflare Access:** Configured for enhanced security on publicly exposed services.
 6. **Cloudflared:**
@@ -101,45 +101,45 @@ The networking setup is designed for flexible, secure, and unified access to ser
 
 You utilize a structured domain naming convention to differentiate access methods:
 
-- **`.local.kkasbi.site` (Deprecated/Backup):** For local network access. Previously used `Nginx Proxy Manager` to route these requests.
-- **`.tail.kkasbi.site` (Deprecated/Backup):** For Tailscale-driven access. Requires Tailscale VPN to be active on the client device.
-- **`.kkasbi.site` (Public Access):** Direct Cloudflare Tunnel access for specific services. These services are publicly exposed via Cloudflare.
-- **`.krynet.cc` (Primary Split Horizon DNS):** The main domain for unified access, regardless of whether you're on the local network or accessing remotely via Tailscale. This is achieved through Split Horizon DNS.
+- **`.local.primarydomain.com` (Deprecated/Backup):** For local network access. Previously used `Nginx Proxy Manager` to route these requests.
+- **`.tail.primarydomain.com` (Deprecated/Backup):** For Tailscale-driven access. Requires Tailscale VPN to be active on the client device.
+- **`.primarydomain.com` (Public Access):** Direct Cloudflare Tunnel access for specific services. These services are publicly exposed via Cloudflare.
+- **`.secondarydomain.com` (Primary Split Horizon DNS):** The main domain for unified access, regardless of whether you're on the local network or accessing remotely via Tailscale. This is achieved through Split Horizon DNS.
 
-### Split Horizon DNS (`krynet.cc`) Configuration
+### Split Horizon DNS (`secondarydomain.com`) Configuration
 
-This setup allows you to use a single URL (e.g., `photos.krynet.cc`) for both internal and external access to your services.
+This setup allows you to use a single URL (e.g., `photos.secondarydomain.com`) for both internal and external access to your services.
 
 1. **External Resolution (via Tailscale):**
-    - For clients *outside* your home network, DNS queries for `.krynet.cc` are resolved to the **Tailscale public IP** of your TrueNAS server.
-    - When a request is made (e.g., `photos.krynet.cc`), it first goes through Tailscale, then is routed internally to the TrueNAS server. NPM on the TrueNAS server then proxies it to the correct application.
+    - For clients *outside* your home network, DNS queries for `.secondarydomain.com` are resolved to the **Tailscale public IP** of your TrueNAS server.
+    - When a request is made (e.g., `photos.secondarydomain.com`), it first goes through Tailscale, then is routed internally to the TrueNAS server. NPM on the TrueNAS server then proxies it to the correct application.
 2. **Internal Resolution (via AdGuard Home):**
     - For clients *inside* your home network, your router points to your **AdGuard Home instances** (`192.168.0.100` and `192.168.0.212`) as DNS servers.
-    - AdGuard Home has **DNS Rewrite rules** configured: `.krynet.cc` is rewritten to `192.168.0.100` (the LAN IP of your TrueNAS server).
-    - When a request is made (e.g., `photos.krynet.cc`), it's resolved directly to `192.168.0.100` by AdGuard Home. NPM then proxies it to the correct application.
+    - AdGuard Home has **DNS Rewrite rules** configured: `.secondarydomain.com` is rewritten to `192.168.0.100` (the LAN IP of your TrueNAS server).
+    - When a request is made (e.g., `photos.secondarydomain.com`), it's resolved directly to `192.168.0.100` by AdGuard Home. NPM then proxies it to the correct application.
 
-This setup ensures that all `*.krynet.cc` domains resolve to the correct internal IP (`192.168.0.100`) when on the local network and leverage Tailscale for external access, simplifying access patterns.
+This setup ensures that all `*.secondarydomain.com` domains resolve to the correct internal IP (`192.168.0.100`) when on the local network and leverage Tailscale for external access, simplifying access patterns.
 
-### Request Flow for `.krynet.cc` Services
+### Request Flow for `.secondarydomain.com` Services
 
-- **Client (Local Network) -> `photos.krynet.cc`:**
-    1. Client makes DNS query for `photos.krynet.cc`.
+- **Client (Local Network) -> `photos.secondarydomain.com`:**
+    1. Client makes DNS query for `photos.secondarydomain.com`.
     2. Router forwards query to **AdGuard Home** (`192.168.0.100`).
-    3. AdGuard Home's DNS Rewrite resolves `photos.krynet.cc` to `192.168.0.100`.
+    3. AdGuard Home's DNS Rewrite resolves `photos.secondarydomain.com` to `192.168.0.100`.
     4. Client connects directly to `192.168.0.100` (TrueNAS server) on port `443` (HTTPS).
     5. **Nginx Proxy Manager (NPM)** on TrueNAS (`network_mode: host`) receives the request on port `443`.
     6. NPM proxies the request to the internal port of Immich (`2283`).
     7. Immich responds.
-- **Client (External/Tailscale VPN active) -> `photos.krynet.cc`:**
-    1. Client (with Tailscale VPN on) makes DNS query for `photos.krynet.cc`.
-    2. DNS resolution (could be public DNS or Tailscale's MagicDNS depending on configuration) resolves `photos.krynet.cc` to the **Tailscale IP** of the TrueNAS server.
+- **Client (External/Tailscale VPN active) -> `photos.secondarydomain.com`:**
+    1. Client (with Tailscale VPN on) makes DNS query for `photos.secondarydomain.com`.
+    2. DNS resolution (could be public DNS or Tailscale's MagicDNS depending on configuration) resolves `photos.secondarydomain.com` to the **Tailscale IP** of the TrueNAS server.
     3. Client connects via the Tailscale VPN tunnel to the TrueNAS server's Tailscale IP on port `443` (HTTPS).
     4. **Nginx Proxy Manager (NPM)** on TrueNAS (`network_mode: host`) receives the request on port `443`.
     5. NPM proxies the request to the internal port of Immich (`2283`).
     6. Immich responds.
-- **Client (External/Public Cloudflare Tunnel) -> `media.kkasbi.site`:**
-    1. Client makes DNS query for `media.kkasbi.site`.
-    2. Cloudflare DNS resolves `media.kkasbi.site` to a **Cloudflare IP**.
+- **Client (External/Public Cloudflare Tunnel) -> `media.primarydomain.com`:**
+    1. Client makes DNS query for `media.primarydomain.com`.
+    2. Cloudflare DNS resolves `media.primarydomain.com` to a **Cloudflare IP**.
     3. Client connects to Cloudflare.
     4. Cloudflare routes the request through the **Cloudflare Tunnel** (established by the `cloudflared` container) to the TrueNAS server.
     5. The `cloudflared` container, typically on the host network, directs the traffic to the appropriate internal service (e.g., Jellyfin on port `8096`).
@@ -147,17 +147,17 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
 
 ## 🌐 Domain Configuration
 
-### Primary Domain: kkasbi.site
+### Primary Domain: primarydomain.com
 
 **Registrar/DNS:** Cloudflare
 
 **Access Patterns:**
 
-1. **Direct Access (*.kkasbi.site)** - Public internet via Cloudflare Tunnel
-2. **Local Network (*.local.kkasbi.site)** - LAN access via NPM
-3. **Tailscale VPN (*.tail.kkasbi.site)** - Secure remote access via Tailnet
+1. **Direct Access (*.primarydomain.com)** - Public internet via Cloudflare Tunnel
+2. **Local Network (*.local.primarydomain.com)** - LAN access via NPM
+3. **Tailscale VPN (*.tail.primarydomain.com)** - Secure remote access via Tailnet
 
-### Secondary Domain: krynet.cc
+### Secondary Domain: secondarydomain.com
 
 **Configuration:** Split-Horizon DNS
 
@@ -172,10 +172,10 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
 
 **Wildcard Certificates:**
 
-- .local.kkasbi.site
-- .tail.kkasbi.site
-- .kkasbi.site
-- .krynet.cc
+- .local.primarydomain.com
+- .tail.primarydomain.com
+- .primarydomain.com
+- .secondarydomain.com
 
 ### DNS Configuration
 
@@ -191,8 +191,8 @@ This setup ensures that all `*.krynet.cc` domains resolve to the correct interna
 **Split-Horizon DNS Rules (AdGuard):**
 
 `DNS Rewrite Rules:
-*.krynet.cc → 192.168.0.100
-(External DNS has *.krynet.cc → Tailscale Public IP)`
+*.secondarydomain.com → 192.168.0.100
+(External DNS has *.secondarydomain.com → Tailscale Public IP)`
 
 ---
 
@@ -204,10 +204,10 @@ This is a comprehensive list of all services running on the home server setup.
 
 | Service | Port(s) | Domains | Purpose |
 | --- | --- | --- | --- |
-| **TrueNAS Scale** | `88` (HTTP), `444` (HTTPS) | `server.krynet.cc` | NAS Management |
-| **Portainer (TrueNAS)** | `9443` | `portainer.krynet.cc` | Docker Management (Primary) |
-| **Portainer (Windows)** | `9444` | `portainer2.krynet.cc` | Docker Management (Secondary) |
-| **Nginx Proxy Manager** | `80`, `443`, `81` (UI) | `npm.krynet.cc` | Reverse Proxy & SSL |
+| **TrueNAS Scale** | `88` (HTTP), `444` (HTTPS) | `server.secondarydomain.com` | NAS Management |
+| **Portainer (TrueNAS)** | `9443` | `portainer.secondarydomain.com` | Docker Management (Primary) |
+| **Portainer (Windows)** | `9444` | `portainer2.secondarydomain.com` | Docker Management (Secondary) |
+| **Nginx Proxy Manager** | `80`, `443`, `81` (UI) | `npm.secondarydomain.com` | Reverse Proxy & SSL |
 | **Cloudflared** | N/A (host) | N/A | Cloudflare Tunnel |
 | **Tailscale** | N/A (host) | N/A | VPN & Subnet Router |
 
@@ -217,11 +217,11 @@ Export to Sheets
 
 | Service | Port | Domains | Purpose |
 | --- | --- | --- | --- |
-| **Uptime Kuma** | `3001` | `monitor.krynet.cc` | Service Monitoring |
-| **Prometheus** | `9090` | `prometheus.krynet.cc` | Metrics Collection |
-| **Dozzle** | `8088` | `logs.krynet.cc` | Docker Logs Viewer |
-| **GoAccess** | `7880` | `npmlogs.krynet.cc` | NPM Log Analytics |
-| **Homarr** | `7575` | `dash.krynet.cc` | Central Dashboard |
+| **Uptime Kuma** | `3001` | `monitor.secondarydomain.com` | Service Monitoring |
+| **Prometheus** | `9090` | `prometheus.secondarydomain.com` | Metrics Collection |
+| **Dozzle** | `8088` | `logs.secondarydomain.com` | Docker Logs Viewer |
+| **GoAccess** | `7880` | `npmlogs.secondarydomain.com` | NPM Log Analytics |
+| **Homarr** | `7575` | `dash.secondarydomain.com` | Central Dashboard |
 | **Watchtower** | N/A | N/A | Container Auto-Updater |
 
 Export to Sheets
@@ -230,16 +230,16 @@ Export to Sheets
 
 | Service | Port | Domains | Network Mode | Purpose |
 | --- | --- | --- | --- | --- |
-| **Jellyfin** | `8096` | `media.krynet.cc` | Bridge (`kry_net`) | Media Server |
-| **Jellyseerr** | `5055` | `request.krynet.cc` | `service:gluetun` (VPN) | Media Requests |
-| **Radarr** | `7878` | `radarr.krynet.cc` | Bridge (`kry_net`) | Movie Management |
-| **Sonarr** | `8989` | `sonarr.krynet.cc` | Bridge (`kry_net`) | TV Show Management |
-| **Whisparr** | `6969` | `whisparr.krynet.cc` | `service:gluetun` (VPN) | Music Management |
-| **Bazarr** | `6767` | `bazarr.krynet.cc` | Bridge (`kry_net`) | Subtitle Management |
-| **Prowlarr** | `9696` | `indexer.krynet.cc` | Bridge (`kry_net`) | Indexer Manager |
-| **qBittorrent** | `8080` | `downloads.krynet.cc` | `service:gluetun` (VPN) | Torrent Client |
-| **SABnzbd** | `8085` | `sabnzbd.krynet.cc` | `service:gluetun` (VPN) | Usenet Client |
-| **FlareSolverr** | `8191` | `flaresolverr.krynet.cc` | Bridge (`kry_net`) | Cloudflare Bypass |
+| **Jellyfin** | `8096` | `media.secondarydomain.com` | Bridge (`kry_net`) | Media Server |
+| **Jellyseerr** | `5055` | `request.secondarydomain.com` | `service:gluetun` (VPN) | Media Requests |
+| **Radarr** | `7878` | `radarr.secondarydomain.com` | Bridge (`kry_net`) | Movie Management |
+| **Sonarr** | `8989` | `sonarr.secondarydomain.com` | Bridge (`kry_net`) | TV Show Management |
+| **Whisparr** | `6969` | `whisparr.secondarydomain.com` | `service:gluetun` (VPN) | Music Management |
+| **Bazarr** | `6767` | `bazarr.secondarydomain.com` | Bridge (`kry_net`) | Subtitle Management |
+| **Prowlarr** | `9696` | `indexer.secondarydomain.com` | Bridge (`kry_net`) | Indexer Manager |
+| **qBittorrent** | `8080` | `downloads.secondarydomain.com` | `service:gluetun` (VPN) | Torrent Client |
+| **SABnzbd** | `8085` | `sabnzbd.secondarydomain.com` | `service:gluetun` (VPN) | Usenet Client |
+| **FlareSolverr** | `8191` | `flaresolverr.secondarydomain.com` | Bridge (`kry_net`) | Cloudflare Bypass |
 | **Gluetun** | N/A | N/A | Bridge (`kry_net`) | VPN Gateway |
 
 Export to Sheets
@@ -248,7 +248,7 @@ Export to Sheets
 
 | Service | Port | Domains | Purpose |
 | --- | --- | --- | --- |
-| **Immich Server** | `2283` | `photos.krynet.cc` | Photo Management |
+| **Immich Server** | `2283` | `photos.secondarydomain.com` | Photo Management |
 | **Immich ML** | Internal | N/A | AI/ML Processing (CUDA) |
 | **Immich Redis** | Internal | N/A | Caching |
 | **Immich PostgreSQL** | `5432` | N/A | Database |
@@ -260,8 +260,8 @@ Export to Sheets
 
 | Service | Port | Domains | Purpose |
 | --- | --- | --- | --- |
-| **OpenWebUI** | `3999` | `owui.krynet.cc` | AI Chat Interface |
-| **LiteLLM** | `4000` | `litellm.krynet.cc` | LLM Proxy/Gateway |
+| **OpenWebUI** | `3999` | `owui.secondarydomain.com` | AI Chat Interface |
+| **LiteLLM** | `4000` | `litellm.secondarydomain.com` | LLM Proxy/Gateway |
 
 Export to Sheets
 
@@ -272,7 +272,7 @@ Export to Sheets
 
 | Service | Port | Domains | Purpose |
 | --- | --- | --- | --- |
-| **Home Assistant** | `8123` | `ha.krynet.cc` | Home Automation Hub |
+| **Home Assistant** | `8123` | `ha.secondarydomain.com` | Home Automation Hub |
 
 Export to Sheets
 
@@ -283,8 +283,8 @@ Export to Sheets
 
 | Service | Port(s) | Domains | Location | Purpose |
 | --- | --- | --- | --- | --- |
-| **AdGuard Home (Primary)** | DNS: `53`, UI: `7000` | `adguard.krynet.cc` | TrueNAS | Primary DNS & Ad Blocking |
-| **AdGuard Home (Secondary)** | DNS: `53`, UI: `7002` | `adguard2.krynet.cc` | Windows Server | Secondary DNS & Ad Blocking |
+| **AdGuard Home (Primary)** | DNS: `53`, UI: `7000` | `adguard.secondarydomain.com` | TrueNAS | Primary DNS & Ad Blocking |
+| **AdGuard Home (Secondary)** | DNS: `53`, UI: `7002` | `adguard2.secondarydomain.com` | Windows Server | Secondary DNS & Ad Blocking |
 | **AdGuard Home Sync** | `8082` | N/A | TrueNAS | Config Synchronization |
 
 ---
@@ -300,12 +300,12 @@ This section lists all installed applications, their functionality, networking d
     - **Primary Instance (TrueNAS):**
         - **Port:** `9443`
         - **Installation:** Via TrueNAS Apps catalog.
-        - **Domains:** `portainer.local.kkasbi.site`, `portainer.tail.kkasbi.site`, `portainer.kkasbi.site`, `portainer.krynet.cc`
+        - **Domains:** `portainer.local.primarydomain.com`, `portainer.tail.primarydomain.com`, `portainer.primarydomain.com`, `portainer.secondarydomain.com`
         - **Functionality:** Centralized management UI for Docker containers, stacks, volumes, and networks on the TrueNAS server.
     - **Secondary Instance (Windows Server):**
         - **Port:** `9444`
         - **Installation:** Docker Desktop on Windows.
-        - **Domain:** `portainer2.krynet.cc`
+        - **Domain:** `portainer2.secondarydomain.com`
         - **Functionality:** Manages Docker containers on the Windows server.
 - **`kry_net` Docker Network:** An external Docker network used by most services for inter-container communication on the TrueNAS server.
 
@@ -336,7 +336,7 @@ This section lists all installed applications, their functionality, networking d
 ### 3. DNS Ad-Blocking & Split-Horizon
 
 - Network-wide ad blocking via AdGuard
-- Single URLs work everywhere (krynet.cc)
+- Single URLs work everywhere (secondarydomain.com)
 - Automatic failover with secondary DNS
 - Custom DNS rules for local services
 
@@ -360,7 +360,7 @@ This section lists all installed applications, their functionality, networking d
         - **Host Port:** `2283`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/andromeda/apps/immich/uploads` for media, `/mnt/andromeda/apps/immich/db` for PostgreSQL database, `/mnt/andromeda/apps/immich/ml` for ML cache.
-    - **Domains:** `photos.local.kkasbi.site`, `photos.tail.kkasbi.site`, `photos.kkasbi.site`, `photos.krynet.cc`
+    - **Domains:** `photos.local.primarydomain.com`, `photos.tail.primarydomain.com`, `photos.primarydomain.com`, `photos.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -423,7 +423,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `8096`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/jellyfin:/config`, `/mnt/orion/media/Movies:/data/movies`, etc.
-    - **Domains:** `media.local.kkasbi.site`, `media.tail.kkasbi.site`, `media.kkasbi.site`, `media.krynet.cc`
+    - **Domains:** `media.local.primarydomain.com`, `media.tail.primarydomain.com`, `media.primarydomain.com`, `media.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -438,7 +438,7 @@ This stack automates the entire process of discovering, requesting, downloading,
               - ${DOCKER_MEDIA_PATH}/Movies:/data/movies
               # ... other media paths
             environment:
-              - JELLYFIN_PublishedServerUrl=jellyfin.local.kkasbi.site # Example
+              - JELLYFIN_PublishedServerUrl=jellyfin.local.primarydomain.com # Example
             devices:
               - /dev/dri:/dev/dri # For hardware transcoding
             networks:
@@ -452,7 +452,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Container Port:** `5055`
         - **Network Mode:** `service:gluetun` (host port `5055` mapped on Gluetun)
     - **Storage:** `/mnt/orion/apps-config/jellyseerr:/app/config`
-    - **Domains:** `request.local.kkasbi.site`, `request.tail.kkasbi.site`, `request.kkasbi.site`, `request.krynet.cc`
+    - **Domains:** `request.local.primarydomain.com`, `request.tail.primarydomain.com`, `request.primarydomain.com`, `request.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -510,7 +510,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Container Port:** `8080` (for WebUI)
         - **Network Mode:** `service:gluetun` (Host port `8080` mapped on Gluetun)
     - **Storage:** `/mnt/orion/apps-config/qbittorrent:/config`, `/mnt/orion/downloads:/downloads`
-    - **Domains:** `downloads.local.kkasbi.site`, `downloads.tail.kkasbi.site`, `downloads.krynet.cc`
+    - **Domains:** `downloads.local.primarydomain.com`, `downloads.tail.primarydomain.com`, `downloads.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -535,7 +535,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Container Port:** `8085` (for WebUI)
         - **Network Mode:** `service:gluetun` (Host port `8085` mapped on Gluetun)
     - **Storage:** `/mnt/orion/apps-config/sabnzbd:/config`, `/mnt/orion/usenet/complete:/downloads`, `/mnt/orion/usenet/incomplete:/incomplete-downloads`
-    - **Domains:** `sabnzbd.local.kkasbi.site`, `sabnzbd.tail.kkasbi.site`, `sabnzbd.krynet.cc`
+    - **Domains:** `sabnzbd.local.primarydomain.com`, `sabnzbd.tail.primarydomain.com`, `sabnzbd.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -559,7 +559,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Container Port:** `8191`
         - **Host Port:** `8191`
         - **Docker Network:** `kry_net`
-    - **Domains:** `flaresolverr.local.kkasbi.site`, `flaresolverr.tail.kkasbi.site`, `flaresolverr.krynet.cc`
+    - **Domains:** `flaresolverr.local.primarydomain.com`, `flaresolverr.tail.primarydomain.com`, `flaresolverr.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -581,7 +581,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `9696`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/prowlarr:/config`
-    - **Domains:** `indexer.local.kkasbi.site`, `indexer.tail.kkasbi.site`, `indexer.krynet.cc`
+    - **Domains:** `indexer.local.primarydomain.com`, `indexer.tail.primarydomain.com`, `indexer.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -605,7 +605,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `8989`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/sonarr:/config`, `/mnt/orion/downloads:/downloads`, `/mnt/orion/usenet/complete:/usenet`, `/mnt/orion/media/TVShows:/tv`, `/mnt/orion/media/Anime:/anime`
-    - **Domains:** `sonarr.local.kkasbi.site`, `sonarr.tail.kkasbi.site`, `sonarr.krynet.cc`
+    - **Domains:** `sonarr.local.primarydomain.com`, `sonarr.tail.primarydomain.com`, `sonarr.secondarydomain.com`
     - **NZB360 Integration:** Configured on Android phone.
     - **Docker Compose Snippet Highlights:**YAML
         
@@ -634,7 +634,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `7878`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/radarr:/config`, `/mnt/orion/downloads:/downloads`, `/mnt/orion/usenet/complete:/usenet`, `/mnt/orion/media/Movies:/movies`, `/mnt/orion/media/Documentaries:/documentaries`
-    - **Domains:** `radarr.local.kkasbi.site`, `radarr.tail.kkasbi.site`, `radarr.krynet.cc`
+    - **Domains:** `radarr.local.primarydomain.com`, `radarr.tail.primarydomain.com`, `radarr.secondarydomain.com`
     - **NZB360 Integration:** Configured on Android phone.
     - **Docker Compose Snippet Highlights:**YAML
         
@@ -663,7 +663,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `6767`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/bazarr:/config`, and mounts to all media folders (`/mnt/orion/media/Movies`, `/mnt/orion/media/TVShows`, etc.)
-    - **Domains:** `bazarr.local.kkasbi.site`, `bazarr.tail.kkasbi.site`, `bazarr.krynet.cc`
+    - **Domains:** `bazarr.local.primarydomain.com`, `bazarr.tail.primarydomain.com`, `bazarr.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -689,7 +689,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Container Port:** `6969`
         - **Network Mode:** `service:gluetun` (Host port `6969` mapped on Gluetun)
     - **Storage:** `/mnt/orion/apps-config/whisparr:/config`, `/mnt/orion/media:/media`
-    - **Domains:** `whisparr.local.kkasbi.site`, `whisparr.tail.kkasbi.site`, `whisparr.krynet.cc`
+    - **Domains:** `whisparr.local.primarydomain.com`, `whisparr.tail.primarydomain.com`, `whisparr.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -719,14 +719,14 @@ This stack automates the entire process of discovering, requesting, downloading,
             - **Initial Setup Port:** `7001` (mapped to container port `3000`)
             - **DoH/DoT/DoQ Ports:** `8443` (DoH/HTTPS), `853` (DoT), `784`/`8853` (DoQ)
         - **Storage:** `/mnt/orion/apps-config/adguardhome/work`, `/mnt/orion/apps-config/adguardhome/conf`
-        - **Domains:** `adguard.kkasbi.site`, `adguard.local.kkasbi.site`, `adguard.tail.kkasbi.site`, `adguard.krynet.cc`
+        - **Domains:** `adguard.primarydomain.com`, `adguard.local.primarydomain.com`, `adguard.tail.primarydomain.com`, `adguard.secondarydomain.com`
     - **Secondary Instance (Windows Server):**
         - **Installation:** Portainer Stack on Docker Desktop.
         - **Networking:**
             - **Admin UI Port:** `7002` (mapped to container port `80`)
-            - **Domains:** `adguard2.krynet.cc`
+            - **Domains:** `adguard2.secondarydomain.com`
     - **Router Configuration:** Router DNS settings point to `192.168.0.100` (primary) and `192.168.0.212` (secondary).
-    - **Split Horizon DNS:** Configured within AdGuard Home using DNS Rewrite rules for `.krynet.cc` to resolve to `192.168.0.100`.
+    - **Split Horizon DNS:** Configured within AdGuard Home using DNS Rewrite rules for `.secondarydomain.com` to resolve to `192.168.0.100`.
     - **Docker Compose Snippet Highlights (TrueNAS):**YAML
         
         ```yaml
@@ -786,7 +786,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `3999`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/openwebui:/app/backend/data`
-    - **Domains:** `owui.local.kkasbi.site`, `owui.tail.kkasbi.site`, `owui.kkasbi.site`, `owui.krynet.cc`
+    - **Domains:** `owui.local.primarydomain.com`, `owui.tail.primarydomain.com`, `owui.primarydomain.com`, `owui.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -810,7 +810,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `4000`
         - **Docker Network:** `kry_net`
     - **Configuration:** Connects to a PostgreSQL database on the TrueNAS server (`192.168.0.100:5432/litellm`).
-    - **Domains:** `litellm.local.kkasbi.site`, `litellm.tail.kkasbi.site`, `litellm.krynet.cc`
+    - **Domains:** `litellm.local.primarydomain.com`, `litellm.tail.primarydomain.com`, `litellm.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -837,7 +837,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Container Port:** `8123`
         - **Network Mode:** `host` (for auto-discovery)
     - **Storage:** `/mnt/orion/apps-config/homeassistant:/config`, `/etc/localtime:/etc/localtime:ro`, `/run/dbus:/run/dbus:ro`
-    - **Domains:** `ha.local.kkasbi.site`, `ha.tail.kkasbi.site`, `ha.krynet.cc`
+    - **Domains:** `ha.local.primarydomain.com`, `ha.tail.primarydomain.com`, `ha.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -864,7 +864,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `3001`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/uptime-kuma:/app/data`
-    - **Domains:** `monitor.local.kkasbi.site`, `monitor.tail.kkasbi.site`, `monitor.kkasbi.site`, `monitor.krynet.cc`
+    - **Domains:** `monitor.local.primarydomain.com`, `monitor.tail.primarydomain.com`, `monitor.primarydomain.com`, `monitor.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -888,7 +888,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `9090`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/prometheus/data:/prometheus`, `/mnt/orion/apps-config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml`
-    - **Domains:** `prometheus.local.kkasbi.site`, `prometheus.tail.kkasbi.site`, `prometheus.krynet.cc`
+    - **Domains:** `prometheus.local.primarydomain.com`, `prometheus.tail.primarydomain.com`, `prometheus.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -913,7 +913,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `8088`
         - **Docker Network:** `kry_net`
     - **Storage:** `/var/run/docker.sock:/var/run/docker.sock:ro` (read-only access to Docker socket)
-    - **Domains:** `logs.local.kkasbi.site`, `logs.tail.kkasbi.site`, `logs.kkasbi.site`, `logs.krynet.cc`
+    - **Domains:** `logs.local.primarydomain.com`, `logs.tail.primarydomain.com`, `logs.primarydomain.com`, `logs.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -937,7 +937,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `7880`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/npm/data/logs:/opt/log` (mounts NPM logs)
-    - **Domains:** `npmlogs.local.kkasbi.site`, `npmlogs.tail.kkasbi.site`, `npmlogs.krynet.cc`
+    - **Domains:** `npmlogs.local.primarydomain.com`, `npmlogs.tail.primarydomain.com`, `npmlogs.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -961,7 +961,7 @@ This stack automates the entire process of discovering, requesting, downloading,
         - **Host Port:** `7575`
         - **Docker Network:** `kry_net`
     - **Storage:** `/mnt/orion/apps-config/homarr:/appdata`, `/var/run/docker.sock:/var/run/docker.sock` (optional, for Docker integration)
-    - **Domains:** `dash.local.kkasbi.site`, `dash.tail.kkasbi.site`, `dash.kkasbi.site`, `dash.krynet.cc`
+    - **Domains:** `dash.local.primarydomain.com`, `dash.tail.primarydomain.com`, `dash.primarydomain.com`, `dash.secondarydomain.com`
     - **Docker Compose Snippet Highlights:**YAML
         
         ```yaml
@@ -1001,7 +1001,7 @@ This stack automates the entire process of discovering, requesting, downloading,
 
 ## 🔒 Security Measures
 
-- **Cloudflare Access with Google OAuth:** Secures public access to `.kkasbi.site` domains, requiring Google authentication.
+- **Cloudflare Access with Google OAuth:** Secures public access to `.primarydomain.com` domains, requiring Google authentication.
 - **Tailscale:** Provides a secure, encrypted VPN tunnel for remote access to services, reducing the attack surface.
 - **VPN for Downloads (Gluetun/Surfshark):** Ensures privacy and anonymity for torrent and Usenet traffic.
 - **Nginx Proxy Manager:** Centralizes SSL certificate management, providing HTTPS for all web services.
