@@ -332,7 +332,6 @@ User Request (Jellyseerr)
 | **Prowlarr** | Centralized indexer management | `indexer.mydomain.com` |
 | **Sonarr** | TV show and anime automation | `sonarr.local.mydomain2.com` |
 | **Radarr** | Movie and documentary automation | `radarr.local.mydomain2.com` |
-| **Whisparr** | Adult content automation (VPN-only) | `whisparr.local.mydomain2.com` |
 | **Bazarr** | Subtitle management | `bazarr.local.mydomain2.com` |
 | **qBittorrent** | Torrent client (behind Gluetun VPN) | `downloads.local.mydomain2.com` |
 | **SABnzbd** | Usenet client (direct connection) | `sabnzbd.local.mydomain2.com` |
