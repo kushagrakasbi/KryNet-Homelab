@@ -1,21 +1,22 @@
-# 🌌 Project KryNet: The Private Cloud Homelab
+# 🌌 Project KryNet: Production-Grade Private Cloud
 
 **Architected for Resilience | Powered by ZFS | Secured by Zero Trust**
 
-> A production-grade private cloud ecosystem serving a family of four, built on enterprise networking principles with complete data sovereignty.
+Welcome to KryNet, a production-grade private cloud ecosystem serving a family of four. This repository documents the complete hardware, software, and networking architecture of a self-hosted infrastructure that rivals commercial cloud services while maintaining complete data sovereignty.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Philosophy & Design Principles](#philosophy--design-principles)
-- [Hardware Architecture](#hardware-architecture)
-- [Storage Architecture (ZFS)](#storage-architecture-zfs)
-- [Networking Stack](#networking-stack)
-- [Service Ecosystem](#service-ecosystem)
-- [Backup & Resilience Strategy](#backup--resilience-strategy)
-- [Security Implementation](#security-implementation)
-- [Monitoring & Operations](#monitoring--operations)
+1. [Philosophy & Design Principles](#philosophy--design-principles)
+2. [Hardware Architecture](#hardware-architecture)
+3. [Storage Architecture (ZFS)](#storage-architecture)
+4. [Networking Stack](#networking-stack)
+5. [Service Ecosystem](#service-ecosystem)
+6. [Backup & Resilience](#backup--resilience)
+7. [Security Implementation](#security-implementation)
+8. [Monitoring & Operations](#monitoring--operations)
+9. [Future Roadmap](#future-roadmap)
 
 ---
 
@@ -26,657 +27,427 @@ KryNet operates under the **"Home Utility"** model — when the system is down, 
 ### Core Pillars
 
 **Digital Sovereignty**
-- 100% ownership of photos, documents, and media
+- 100% ownership of 500GB+ family photos, documents, and media
 - No monthly storage subscriptions or vendor lock-in
 - Complete control over personal data lifecycle
+- Successful migration from Google Photos to self-hosted Immich
 
 **The WAF (Wife Approval Factor)**
-- Services must be as reliable and intuitive as their "Big Tech" counterparts
-- 99.9% uptime target for family-critical services
-- Seamless user experience across all devices
+- Services must match "Big Tech" reliability and UX
+- 99.9% uptime target (8.76 hours downtime/year)
+- If kids can't watch movies or wife can't backup photos, system is "down"
+- Seamless experience across all devices
 
 **Zero Trust Architecture**
-- No open ports exposed to the internet
-- Identity-based access control via Google OAuth 2.0
+- No open ports exposed to internet
+- Identity-based access via Google OAuth 2.0
 - Split-horizon DNS for intelligent routing
-- Mesh VPN for secure administrative access
+- All external traffic through encrypted tunnels
 
 **Production Standards**
-- Infrastructure-as-Code approach with Portainer
-- Automated updates and health monitoring
-- Real-time alerting via Gotify
-- Comprehensive logging with Dozzle
+- Infrastructure-as-Code via Docker Compose
+- Automated health monitoring and alerting
+- Centralized logging with Dozzle
+- Quarterly backup restoration tests
 
 ---
 
 ## 🖥️ Hardware Architecture
 
 ### KryNet-Prime (Primary Server)
-**Role:** Storage Hub, Media Processing, AI Workloads
 
 | Component | Specification |
 |-----------|---------------|
 | **Chassis** | Fractal Design Node 804 (Dual-chamber, optimized for HDD cooling) |
-| **CPU** | Intel i5-7600K (4C/4T @ 3.8GHz) |
-| **RAM** | 32GB Crucial DDR4 |
-| **GPU** | NVIDIA GTX 1060 6GB (Dedicated to Tdarr transcoding & Immich ML) |
-| **OS** | TrueNAS SCALE (Dragonfish/Cobalt) |
-| **Local IP** | 192.168.0.100 |
+| **CPU** | Intel i5-7600K (4C/4T @ 3.8GHz) - Strong single-core for microservices |
+| **RAM** | 32GB Crucial DDR4 - ZFS ARC + 40+ containers + ML workloads |
+| **GPU** | NVIDIA GTX 1060 6GB - NVENC transcoding + Immich facial recognition |
+| **OS** | TrueNAS SCALE (Dragonfish 24.10) - Linux-based NAS with Docker |
+| **Network** | 1Gbps Ethernet (Intel I219-V) |
+| **IP** | 192.168.0.100 (Static DHCP) |
 
-**Why this configuration:**
-- Strong single-core performance for Go-based microservices
-- Dedicated GPU for hardware-accelerated transcoding (NVENC) and facial recognition
-- ECC-like data integrity via ZFS without ECC RAM requirement
+**Role:** Storage hub, media processing, AI workloads, core infrastructure
 
 ---
 
-### KryNet-Agni (Secondary Sentinel)
-**Role:** High-Availability DNS, Configuration Backup, Failover Node
+### KryNet-Legion (Secondary Sentinel)
 
 | Component | Specification |
 |-----------|---------------|
-| **Model** | SkullSaints Agni Mini-PC |
-| **CPU** | Intel N150 (Twin Lake) |
+| **Hardware** | Repurposed Ubuntu Server Laptop |
+| **OS** | Ubuntu Server 24.04 LTS |
 | **RAM** | 16GB DDR4 |
 | **Storage** | 512GB NVMe SSD |
-| **OS** | Ubuntu Server 24.04 LTS |
-| **Unique Feature** | Built-in LCD screen for real-time system monitoring |
-| **Local IP** | 192.168.0.200 |
+| **Network** | 1Gbps Ethernet |
+| **IP** | 192.168.0.200 (Static DHCP) |
+| **Power** | ~20W (clamshell mode, display off) |
 
-**Purpose:**
-- Secondary DNS server (AdGuard Home) for 24/7 uptime
-- Real-time configuration mirroring via Syncthing
-- Lightweight, low-power consumption (< 15W)
+**Services:**
+- AdGuard Home (Secondary DNS with auto-failover)
+- Syncthing (Real-time config backup from Prime)
+- Portainer Agent (Remote management)
+- Tailscale (Mesh VPN node)
+- OpenSpeedTest (Network testing)
 
----
-
-### Retired: KryNet-Legion
-**Former Role:** Secondary Ubuntu Server
-
-**Reason for Retirement:**
-- Excessive power consumption for limited use case
-- Laptop form factor unsuitable for 24/7 operation
-- Replaced by more efficient Agni node
+**Planned Upgrade:** Awaiting **SkullSaints Agni Mini-PC** (Intel N150, 16GB RAM, built-in LCD) for lower power consumption and better form factor.
 
 ---
 
-## 💾 Storage Architecture (ZFS)
+## 💾 Storage Architecture
 
-All storage is managed via **TrueNAS SCALE** with strict parity, health monitoring, and automatic snapshots.
+All storage managed via **TrueNAS SCALE** with ZFS providing enterprise-grade data integrity.
 
 ### Storage Pools
 
-| Pool Name | Hardware | Capacity | Purpose |
-|-----------|----------|----------|---------|
-| **orion** | 2x 4TB WD Red Plus (Mirror) | ~4TB usable | **The Vault** - Family photos (Immich), Documents (Paperless), Application configs |
-| **comet** | 2x 1TB NVMe SSD (Mirror) | ~1TB usable | **The Ingest** - High-speed downloads, Tdarr processing cache, Database storage (PostgreSQL, Redis) |
-| **andromeda** | 1x 8TB Seagate IronWolf | 8TB | **The Archive** - Movies, TV shows, long-term media storage |
+| Pool | Hardware | Type | Capacity | Purpose |
+|------|----------|------|----------|---------|
+| **orion** | 2x 4TB WD Red Plus | Mirror | ~4TB | **The Vault** - App configs, databases |
+| **comet** | 2x 1TB NVMe SSD | Mirror | ~1TB | **The Ingest** - Downloads, Tdarr cache |
+| **andromeda** | 1x 8TB Seagate IronWolf | Single | 8TB | **The Archive** - Media, photos, documents |
 
-### ZFS Benefits in Practice
+### Dataset Structure
 
-**Data Integrity**
+```
+/mnt/orion/apps-config/     # All Docker container configs (30+ services)
+/mnt/comet/downloads/       # qBittorrent & SABnzbd active downloads
+/mnt/comet/tdarr-cache/     # Transcoding temporary files
+/mnt/andromeda/apps/immich/ # 500GB+ family photos & videos
+/mnt/andromeda/apps/paperless/ # Scanned documents
+/mnt/andromeda/data/media/  # Movies, TV shows, documentaries
+```
+
+### ZFS Configuration
+
+**Snapshot Strategy:**
+- **orion:** Every 6 hours, 48h retention (config protection)
+- **comet:** Daily, 7-day retention (download protection)
+- **andromeda:** Weekly, 4-week retention (media protection)
+
+**Data Integrity:**
 - Automatic checksum verification on every read
-- Self-healing from mirror copies on detected corruption
-- Protection against bit rot and silent data corruption
+- Self-healing from mirror copies
+- Weekly scrubs (Sundays 02:00 AM)
+- SMART tests: Long monthly, short weekly
 
-**Snapshot Strategy**
-- Hourly snapshots of `orion` pool (24-hour retention)
-- Daily snapshots of `comet` pool (7-day retention)
-- Weekly snapshots of `andromeda` pool (30-day retention)
-
-**Performance Optimization**
-- L2ARC caching disabled (adequate RAM for ARC)
-- Special metadata vdev consideration for future expansion
-- Recordsize tuning per dataset (128K for databases, 1M for media)
+**Performance:**
+- ARC: ~20GB RAM allocated
+- Compression: LZ4 (~15% space savings)
+- Recordsize: 128K (databases), 1M (media)
 
 ---
 
-## 🌐 Networking Stack
+## 🌐 Networking Stack (The Secret Sauce)
 
-This is the "secret sauce" of KryNet — a multi-layered networking architecture that provides seamless access from anywhere while maintaining security.
-
-### Network Topology Overview
+### Architecture Overview
 
 ```
-Internet ──┬──> Cloudflare Tunnel (cloudflared) ──> Traefik ──> Services
-           │
-           ├──> Tailscale VPN Mesh ──────────────> Traefik ──> Services
-           │
-LAN ───────┴──> AdGuard Home (Split-Horizon) ───> Traefik ──> Services
+Internet
+    │
+    ├─→ Cloudflare Tunnel (cloudflared) ─→ Caddy ─→ Services
+    ├─→ Tailscale VPN Mesh ──────────────→ Caddy ─→ Services  
+    └─→ LAN → AdGuard (Split-Horizon) ───→ Caddy ─→ Services
 ```
 
----
+### 4.1 Reverse Proxy: Caddy v2
 
-### The Proxy Layer: Traefik
+**Evolution:**
+1. **Nginx Proxy Manager** → Retired (lack of automation)
+2. **Traefik v3** → Replaced (label complexity)
+3. **Caddy v2** → Current (simplicity + power)
 
-**Current Standard:** Traefik v3.x (Infrastructure-as-Code via Docker Labels)
+**Why Caddy:**
+- Centralized Caddyfile (Infrastructure-as-Code)
+- Native Cloudflare DNS-01 challenge
+- 3 lines config vs 15+ Traefik labels
+- Automatic HTTPS with zero configuration
+- HTTP/3 (QUIC) support enabled
 
-**Evolution History:**
-1. **Phase 1:** Nginx Proxy Manager (GUI-based, retired due to lack of automation)
-2. **Phase 2:** Traefik (Current) - Chose for label-based config and native Docker integration
-3. ~~**Phase 3:** Caddy (Considered but stayed with Traefik due to ecosystem maturity)~~
-
-**Traefik Configuration:**
-- **Automatic Service Discovery:** Monitors Docker socket for new containers
-- **Wildcard SSL Certificates:** Via Cloudflare DNS-01 challenge
-- **Entrypoints:** `websecure` (443) for all HTTPS traffic
-- **Certificate Resolver:** `myresolver` using Let's Encrypt
-- **Networks:** `traefik_proxy` (external) for all routed services
-
-**Example Label Pattern:**
-```yaml
-labels:
-  - "traefik.enable=true"
-  - "traefik.docker.network=traefik_proxy"
-  - "traefik.http.routers.myapp.rule=Host(`app.mydomain.com`) || Host(`app.local.mydomain2.com`) || Host(`app.tail.mydomain2.com`)"
-  - "traefik.http.routers.myapp.entrypoints=websecure"
-  - "traefik.http.routers.myapp.tls.certresolver=myresolver"
-  - "traefik.http.services.myapp.loadbalancer.server.port=8080"
+**Configuration Pattern:**
+```caddyfile
+*.mydomain.com, *.lan.mydomain2.com {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+    
+    @immich host photos.mydomain.com photos.lan.mydomain2.com
+    handle @immich {
+        reverse_proxy immich-server:2283
+    }
+}
 ```
 
----
+### 4.2 Split-Horizon DNS
 
-### DNS Strategy: Split-Horizon Intelligence
+**Primary:** AdGuard Home on Prime (192.168.0.100)  
+**Secondary:** AdGuard Home on Legion (192.168.0.200)  
+**Sync:** AdGuard Home Sync (every 5 minutes)
 
-**Primary DNS:** AdGuard Home on Prime (192.168.0.100)  
-**Secondary DNS:** AdGuard Home on Agni (192.168.0.200)
+| Location | URL | Resolves To | Speed |
+|----------|-----|-------------|-------|
+| Home LAN | `photos.mydomain.com` | 192.168.0.100 | 1Gbps |
+| Remote | `photos.mydomain.com` | Cloudflare Tunnel | ISP Upload |
+| Tailscale | `photos.lan.mydomain2.com` | 100.x.x.x | P2P Mesh |
 
-**Synchronization:** AdGuard Home Sync automatically mirrors:
-- DNS rewrites (split-horizon rules)
-- Blocklists and filtering rules
-- Client settings and group configurations
+**Benefits:**
+- Local traffic stays on LAN (no internet consumption)
+- Services work even if internet is down
+- Transparent to users (same URL everywhere)
 
-#### Split-Horizon DNS Rules
+### 4.3 Domain Strategy
 
-| Request Location | Example URL | Resolved To | Network Path |
-|------------------|-------------|-------------|--------------|
-| **Home LAN** | `photos.mydomain.com` | `192.168.0.100` | Direct 1Gbps LAN connection |
-| **Remote (Internet)** | `photos.mydomain.com` | Cloudflare Tunnel | Encrypted tunnel via Cloudflare |
-| **Tailscale VPN** | `photos.tail.mydomain2.com` | `100.x.x.x` | Direct Tailscale mesh connection |
+**mydomain.com (Public):**
+- Cloudflare-managed DNS
+- Exposed via Cloudflare Tunnel
+- Google OAuth 2.0 protected
+- Services: Immich, Jellyfin, Jellyseerr, Homepage
 
-**Why This Matters:**
-- **Performance:** Local traffic stays local (1Gbps vs internet upload speed)
-- **Reliability:** Services remain accessible even if internet is down
-- **Security:** External access requires authentication, internal doesn't
+**mydomain2.com (Internal/VPN):**
+- AdGuard DNS rewrites
+- `*.lan.mydomain2.com` → LAN access
+- No public DNS records (security)
+- Admin interfaces only
 
-**DNS Configuration:**
-- **Router DHCP:** Points all clients to 192.168.0.100 (Primary) and 192.168.0.200 (Secondary)
-- **Upstream DNS:** Cloudflare (1.1.1.1) and Google (8.8.8.8)
-- **DNS-over-HTTPS:** Enabled for upstream queries
-- **Blocklist:** Standard AdGuard filters + custom rules
-
----
-
-### Domain Strategy
-
-**Two Domains in Use:**
-
-**mydomain.com (Primary - Public Facing)**
-- Used for: Services accessible via Cloudflare Tunnel
-- Examples: `photos.mydomain.com`, `request.mydomain.com`, `media.mydomain.com`
-- Managed via: Cloudflare Dashboard (DNS records point to tunnel)
-
-**mydomain2.com (Secondary - Internal/VPN)**
-- Used for: Local DNS rewrites and Tailscale subdomains
-- Examples: `*.local.mydomain2.com` (LAN), `*.tail.mydomain2.com` (Tailscale)
-- Managed via: AdGuard Home DNS rewrites
-
-**Subdomain Pattern:**
-```
-app.mydomain.com        → Public (via Cloudflare Tunnel)
-app.local.mydomain2.com → LAN Only (split-horizon DNS)
-app.tail.mydomain2.com  → Tailscale VPN Only
-```
-
----
-
-### Cloudflare Tunnel (cloudflared)
-
-**Purpose:** Secure, zero-configuration public access without port forwarding
+### 4.4 Cloudflare Tunnel
 
 **How It Works:**
-1. `cloudflared` container runs on Prime
-2. Establishes outbound encrypted tunnel to Cloudflare edge
-3. Cloudflare DNS records point to tunnel UUID
-4. All traffic flows: Internet → Cloudflare → Tunnel → Traefik → Service
-
-**Security Layer: Cloudflare Zero Trust**
-- **Google OAuth 2.0:** All public-facing services require Google authentication
-- **Email Whitelist:** Only specific Gmail accounts can access
-- **Session Duration:** 24-hour sessions with automatic re-authentication
-- **Application Policies:** Per-service access control rules
-
-**Services Exposed via Tunnel:**
-- Immich (photos.mydomain.com)
-- Jellyseerr (request.mydomain.com)
-- Jellyfin (media.mydomain.com)
-- Homepage Dashboard (home.mydomain.com)
-
-**Services NOT Exposed:**
-- Traefik Dashboard (admin only)
-- AdGuard Home (admin only)
-- Portainer (admin only)
-- Dozzle Logs (admin only)
-
----
-
-### Tailscale Mesh VPN
-
-**Purpose:** Secure administrative access and "always-on" connectivity for power users
-
-**Deployment:**
-- **Prime Node:** Advertises subnet routes (192.168.0.0/24) and acts as exit node
-- **Agni Node:** Standard mesh node
-- **Mobile Devices:** Installed on phones/tablets for remote access
-- **Laptop:** On-demand connection for administration
-
-**Configuration:**
-```bash
-TS_AUTHKEY=tskey-auth-[REDACTED]
-TS_ROUTES=192.168.0.0/24
-TS_EXTRA_ARGS=--advertise-exit-node
+```
+User → Cloudflare Edge → Encrypted Tunnel → Caddy → Service
 ```
 
+**Benefits:**
+- No open ports on router
+- Home IP hidden behind Cloudflare
+- DDoS protection included
+- Works behind CGNAT
+
+**Security:** Cloudflare Zero Trust Access
+- Google OAuth 2.0 authentication
+- Email whitelist (family members only)
+- 24-hour session duration
+
+### 4.5 Tailscale Mesh VPN
+
+**Prime Configuration:**
+- Subnet router (advertises 192.168.0.0/24)
+- Exit node (route internet through home)
+- MagicDNS enabled
+
 **Use Cases:**
-- Remote server administration via SSH
-- Accessing non-public services (Traefik dashboard, logs)
-- Secure access to media library while traveling
-- Bypassing ISP throttling (via exit node)
+- SSH administrative access
+- Access internal services (Portainer, logs)
+- Secure public Wi-Fi usage
+- Direct NAS access via Samba
 
-**Tailscale Subdomain Pattern:**
-- All services accessible via `*.tail.mydomain2.com`
-- Traefik automatically routes based on Host header
-- No additional authentication required (Tailscale = trusted network)
-
----
-
-### Network Security & Isolation
-
-**Docker Networks:**
-- `traefik_proxy` (External): For all web-exposed services
-- `kry_net` (External): Internal service communication
-- `host` mode: Used only for Tailscale, Home Assistant, AdGuard Home (require host network access)
-
-**Firewall Rules:**
-- **TrueNAS:** Default deny, allow only ports 80/443 for Traefik
-- **Router:** No port forwarding configured (Cloudflare Tunnel only)
-- **Docker:** Inter-container communication restricted by network membership
-
-**VPN Isolation (Gluetun):**
-- All torrent traffic forced through Gluetun VPN container
-- Kill switch enabled: If VPN drops, downloads stop
-- DNS leak protection: Forced to VPN provider's DNS
-- Services behind VPN: qBittorrent, Jellyseerr, Whisparr
+**Security:**
+- End-to-end WireGuard encryption
+- Key-based authentication
+- Per-device ACLs
 
 ---
 
 ## 🎬 Service Ecosystem
 
-### Media Automation Pipeline (The *arr Stack)
+**40+ Docker containers** deployed via Portainer Stacks.
 
-**Request Flow:**
+### Media Automation (*arr Stack)
+
+**Workflow:**
 ```
-User Request (Jellyseerr) 
-    → Indexer Search (Prowlarr) 
-    → Download Manager (Radarr/Sonarr) 
-    → Torrent Client (qBittorrent via Gluetun VPN) 
-    → Optimization (Tdarr) 
-    → Media Server (Jellyfin)
+Jellyseerr (Request) → Prowlarr (Search) → Sonarr/Radarr (Manage)
+→ qBittorrent/SABnzbd (Download) → Tdarr (Optimize) → Jellyfin (Stream)
 ```
 
-**Components:**
+| Service | Purpose | Access |
+|---------|---------|--------|
+| Jellyseerr | User requests | `request.mydomain.com` |
+| Prowlarr | Indexer management | Admin only |
+| Sonarr | TV automation | Admin only |
+| Radarr | Movie automation | Admin only |
+| Bazarr | Subtitle management | Admin only |
+| qBittorrent | Torrent client (via Gluetun VPN) | Admin only |
+| SABnzbd | Usenet client | Admin only |
+| Tdarr | GPU transcoding to HEVC (~40% savings) | Admin only |
+| Jellyfin | Media streaming (4K hardware accel) | `media.mydomain.com` |
 
-| Service | Purpose | Access URL |
-|---------|---------|------------|
-| **Jellyseerr** | User-friendly request interface | `request.mydomain.com` |
-| **Prowlarr** | Centralized indexer management | `indexer.mydomain.com` |
-| **Sonarr** | TV show and anime automation | `sonarr.local.mydomain2.com` |
-| **Radarr** | Movie and documentary automation | `radarr.local.mydomain2.com` |
-| **Bazarr** | Subtitle management | `bazarr.local.mydomain2.com` |
-| **qBittorrent** | Torrent client (behind Gluetun VPN) | `downloads.local.mydomain2.com` |
-| **SABnzbd** | Usenet client (direct connection) | `sabnzbd.local.mydomain2.com` |
-| **FlareSolverr** | Cloudflare bypass proxy | `flare.local.mydomain2.com` |
-
-**Jellyfin Configuration:**
-- Hardware acceleration: Intel QuickSync (CPU) + NVENC (GPU)
-- 4K HDR tone-mapping enabled
-- Libraries: Movies, TV Shows, Anime, Documentaries
-- Mobile apps: Android, iOS (Finamp for music)
-
-**Tdarr Optimization:**
-- Monitors `andromeda` pool for new media
-- Transcodes to H.265 (HEVC) using GTX 1060
-- 10-bit color depth preserved
-- Average 40% storage savings
-- Automatic subtitle and audio track management
-
----
+**Gluetun VPN:** All downloads through Surfshark WireGuard with kill switch.
 
 ### Personal Data & Productivity
 
 **Immich (Photo Management)**
-- **Migration:** 500GB+ from Google Photos
-- **Storage:** Database on `comet`, photos on `andromeda`
-- **ML Features:** 
-  - Facial recognition (GPU-accelerated)
-  - Natural language search ("show me photos of a beach")
-  - Smart albums and automatic tagging
-- **Backup:** Primary source of truth for family photos
-- **Access:** `photos.mydomain.com` (public) and `photos.local.mydomain2.com` (local)
+- 500GB+ migrated from Google Photos
+- GPU facial recognition
+- Natural language search ("beach photos")
+- Access: `photos.mydomain.com`
 
-**Paperless-ngx (Document Management)**
-- **Storage:** Documents on `andromeda/apps/paperless`
-- **OCR:** Tesseract with English language support
-- **Workflow:**
-  1. Physical mail scanned via mobile app
-  2. Upload to consume folder (Syncthing monitored)
-  3. Automatic OCR and metadata extraction
-  4. Tagged and categorized (utility bills, health records, school documents)
-- **Database:** Shared PostgreSQL on Prime
-- **Access:** `docs.mydomain.com`
+**Paperless-ngx (Documents)**
+- OCR for scanned mail/documents
+- Automatic tagging and categorization
+- Storage: andromeda pool
+- Mobile scan → auto-import workflow
 
-**FreshRSS (RSS Aggregator)**
-- Centralized RSS feed management
-- Mobile-friendly responsive design
-- Fever API support for third-party apps
-- Access: `rss.local.mydomain2.com`
+**FreshRSS** - RSS feed aggregation (currently disabled)
 
-**Syncthing (File Synchronization)**
-- **Prime → Agni:** Real-time app config backup (read-only on Agni)
-- **Agni → Prime:** Legion backup sync
-- **Mobile → Prime:** Document scanning and photo upload
-- **Conflict Resolution:** Latest modification wins
-- **Access:** `sync.local.mydomain2.com`
+### AI Playground
+
+**LiteLLM** - Centralized LLM proxy gateway (currently disabled)
+**OpenWebUI** - ChatGPT-style interface (currently disabled)
+
+### Dashboards
+
+**Homepage** - Primary dashboard with service status  
+**Homarr** - Alternative icon-based launcher
+
+### Home Automation
+
+**Home Assistant** - Smart home control (host network mode)
 
 ---
 
-### Private AI Playground
+## 🔄 Backup & Resilience
 
-**LiteLLM (LLM Gateway)**
-- Centralized proxy for multiple AI models
-- Database: Shared PostgreSQL on Prime
-- Metrics: Prometheus `/metrics` endpoint
-- Cost tracking and usage analytics
-- Access: `litellm.local.mydomain2.com`
+### 3-2-1 Backup Rule
 
-**OpenWebUI (AI Interface)**
-- Family-friendly ChatGPT-style interface
-- Multi-user support with isolated conversations
-- Model selection: GPT-4, Claude, Local models
-- Document upload and RAG capabilities
-- Access: `ow.mydomain.com`
+**3 Copies:**
+1. Live data on ZFS pools
+2. Local mirror via Syncthing to Legion
+3. Encrypted cloud backup (Backblaze B2)
 
----
+**2 Media:**
+- HDD (orion, andromeda)
+- SSD (comet)
 
-### Dashboards & Interfaces
+**1 Offsite:**
+- Critical photos encrypted (age + rclone)
+- Nightly incremental sync at 02:00 AM
 
-**Homepage (Primary Dashboard)**
-- Real-time service status cards
-- Docker container integration
-- Weather, calendar, and bookmarks
-- Customizable per-user layouts
-- Access: `home.mydomain.com`
-
-**Homarr (Alternative Dashboard)**
-- Icon-based service launcher
-- Integration with *arr stack for stats
-- Custom CSS themes
-- Access: `dash.mydomain.com`
-
----
-
-## 🔄 Backup & Resilience Strategy
-
-Following the **3-2-1 Backup Rule** strictly:
-
-### 3 Copies of Data
-1. **Primary:** Live data on ZFS pools (`orion`, `comet`, `andromeda`)
-2. **Local Mirror:** Syncthing real-time sync to Agni node
-3. **Offsite:** Encrypted S3-compatible cloud backup (Backblaze B2)
-
-### 2 Different Media Types
-- **HDD:** Spinning rust for bulk storage (orion, andromeda)
-- **SSD:** Solid state for configs and databases (comet)
-
-### 1 Offsite Copy
-- **Critical Data:** Family photos (Immich) encrypted with age + rclone
-- **Frequency:** Nightly incremental sync at 02:00 AM
-- **Encryption:** AES-256, keys stored in password manager
-
-### ZFS Snapshot Strategy
-
-| Pool | Frequency | Retention |
-|------|-----------|-----------|
-| orion | Every 6 hours | 48 hours |
-| comet | Daily | 7 days |
-| andromeda | Weekly | 30 days |
-
-**Snapshot Automation:** Built-in TrueNAS periodic snapshot tasks
-
-### Application Config Backup
+### Application Backups
 
 **Syncthing Mirroring:**
 - Source: `/mnt/orion/apps-config` (Prime)
-- Destination: `/home/legion/apps/syncthing/data/truenas-backup` (Agni)
-- Mode: Send-only from Prime (read-only on Agni)
-- Real-time sync with 60-second scan interval
+- Destination: Legion (read-only sync)
+- Real-time with 60s scan interval
 
 **What's Backed Up:**
-- All Portainer stack `.env` files
-- Application configurations
-- Database dumps (weekly automated via cron)
-- SSL certificates from Traefik
+- All Portainer stack configs
+- Environment files
+- Database dumps (weekly cron)
+- SSL certificates
 
 ---
 
 ## 🔒 Security Implementation
 
-### Zero Trust Architecture
+### Zero Trust Layers
 
-**Principle:** Never trust, always verify — even from internal network
+1. **Network:** No router ports open, tunnels only
+2. **Application:** Google OAuth for public services
+3. **Service:** Docker network isolation
 
-**Implementation Layers:**
+### Docker Security
 
-1. **Network Level (Tailscale + Cloudflare)**
-   - No inbound ports open on router
-   - All external access via encrypted tunnels
-   - MagicDNS for internal service discovery
+**Networks:**
+- `kry_net` - Internal service communication
+- `traefik_proxy` - Web-exposed containers
+- `host` - Tailscale, Home Assistant, AdGuard
 
-2. **Application Level (Cloudflare Access)**
-   - Google OAuth 2.0 for public services
-   - Email whitelist (only family members)
-   - Session management with automatic timeout
-
-3. **Service Level (Traefik + Docker)**
-   - Network isolation via Docker networks
-   - Least privilege container permissions
-   - Read-only filesystem mounts where possible
-
-### Docker Security Hardening
-
-**Container Isolation:**
-- Services on dedicated networks (`traefik_proxy`, `kry_net`)
-- No `--privileged` flag except where absolutely necessary (Tailscale, Home Assistant)
-- User namespacing via PUID/PGID
-
-**Secrets Management:**
-- Sensitive values in `.env` files (excluded from git)
-- API keys rotated quarterly
-- No secrets in container labels or logs
-
-### mDNS Management
-
-**Problem:** TrueNAS global mDNS conflicted with Home Assistant device discovery (UDP 5353)
-
-**Solution:**
-- Disabled TrueNAS global mDNS advertisement
-- Home Assistant uses `host` network mode for discovery
-- Local DNS resolution via AdGuard Home instead
+**Isolation:**
+- User namespacing (PUID/PGID)
+- Read-only mounts where possible
+- Minimal `privileged` flag usage
 
 ### VPN Kill Switch (Gluetun)
 
-**Configuration:**
-```yaml
-environment:
-  - VPN_SERVICE_PROVIDER=surfshark
-  - VPN_TYPE=wireguard
-  - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/24,172.16.3.0/24
-```
-
-**Protection:**
-- If VPN drops, firewall blocks all traffic
-- Only allows traffic to VPN server and local networks
-- DNS leak protection enforced
+- Firewall blocks traffic if VPN drops
+- DNS leak protection
+- Only allows local networks + VPN server
 
 ---
 
 ## 📊 Monitoring & Operations
 
-### Health Monitoring (Uptime Kuma)
+### Health Monitoring
 
-**Monitored Services:**
-- All public-facing URLs (HTTP 200 checks)
+**Uptime Kuma**
+- HTTP 200 checks for all services
 - Docker container health status
-- Disk space thresholds (80% warning, 90% critical)
-- Certificate expiry (30-day warning)
+- Disk space alerts (80% warning)
+- Certificate expiry warnings
 
-**Notification Channels:**
-- Gotify (instant push to mobile)
-- Email (backup channel)
+**Notifications:** Gotify push to mobile
 
-**Access:** `monitor.local.mydomain2.com`
+### Metrics & Logging
 
-### Metrics & Observability
+**Prometheus** - Metrics collection (15-day retention)  
+**Grafana** - Visualization dashboards  
+**Dozzle** - Real-time container logs  
 
-**Prometheus:**
-- Scrapes metrics from LiteLLM, Traefik, Docker
-- 15-day retention policy
-- Access: `prom.local.mydomain2.com`
+### Automated Maintenance
 
-**Grafana (Future):**
-- Planned for visualizing Prometheus data
-- Custom dashboards for bandwidth, CPU, GPU utilization
-
-### Logging (Dozzle)
-
-**Real-Time Log Streaming:**
-- Web-based interface for all container logs
-- No disk overhead (reads Docker socket directly)
-- Search and filter across all services
-- Access: `logs.local.mydomain2.com`
-
-### Notifications (Gotify)
-
-**Push Notification Server:**
-- Self-hosted alternative to Pushover
-- Mobile app for Android (iOS via web)
-- Priority levels and custom sounds
-- Access: `notify.local.mydomain2.com`
-
-**Alert Types:**
-- Service down (Uptime Kuma)
-- Disk space warnings (TrueNAS)
-- Backup failures (rclone)
-- Certificate expiry warnings (Traefik)
-
-### Automated Updates (Watchtower)
-
-**Configuration:**
-- Daily check at 04:00 AM
-- Auto-update all containers with `latest` tag
-- Email notification on updates
-- Manual pin for critical services (database, Immich)
-
-**Exclusions:**
-- PostgreSQL (requires manual migration testing)
-- Immich (breaking changes common)
-
-### Network Testing
-
-**Speedtest Tracker:**
-- Automated hourly speed tests
-- Historical data visualization
-- ISP performance monitoring
-- Access: `speed.local.mydomain2.com`
-
-**OpenSpeedTest:**
-- On-demand LAN speed testing
-- Client-side JavaScript-based
-- Access: `ospt.local.mydomain2.com`
+**Watchtower** - Daily updates at 04:00 AM (currently disabled)  
+**Speedtest Tracker** - Hourly ISP monitoring
 
 ---
 
 ## 🚀 Future Roadmap
 
-### Planned Additions
+### Infrastructure
+- [ ] Deploy SkullSaints Agni (replacing Legion)
+- [ ] Vaultwarden password manager
+- [ ] Nextcloud collaborative editing
+- [ ] Grafana custom dashboards
 
-**Infrastructure:**
-- [ ] Grafana deployment with custom dashboards
-- [ ] Vaultwarden for password management
-- [ ] Nextcloud for collaborative document editing
-- [ ] Home Assistant voice control expansion
+### Storage
+- [ ] Expand orion: Add 2x 8TB (mirror vdev)
+- [ ] Convert andromeda to mirror (2nd 8TB)
+- [ ] Hot spare drive for auto-resilver
 
-**Storage:**
-- [ ] Expand `orion` pool: Add 2x 8TB drives (mirror-vdev)
-- [ ] Migrate `andromeda` to mirror configuration
-- [ ] Add hot spare drive for automatic resilver
-
-**Networking:**
-- [ ] Transition from Traefik to Caddy for simpler config
-- [ ] WireGuard as backup VPN (parallel to Tailscale)
+### Networking
+- [ ] WireGuard backup VPN
 - [ ] IPv6 support throughout stack
 
-**Services:**
-- [ ] Audiobookshelf for audiobook management
-- [ ] Calibre-Web for ebook library
-- [ ] Kavita for comics/manga
-- [ ] Mealie for recipe management
+### Services
+- [ ] Audiobookshelf for audiobooks
+- [ ] Calibre-Web for ebooks
+- [ ] Mealie recipe management
+- [ ] Re-enable AI stack (LiteLLM + OpenWebUI)
 
 ---
 
 ## 📚 Lessons Learned
 
 ### What Went Right
-- ZFS has saved data multiple times from drive errors
-- Split-horizon DNS eliminates internet dependency for local access
-- GPU transcoding reduces storage by 40% with no quality loss
-- Cloudflare Tunnel is more reliable than dynamic DNS
+- ZFS saved data from drive errors multiple times
+- Split-horizon DNS eliminates internet dependency
+- GPU transcoding: 40% storage savings, no quality loss
+- Cloudflare Tunnel more reliable than dynamic DNS
 
 ### What I'd Do Differently
-- Start with Caddy instead of migrating through 3 proxy solutions
-- Use ECC RAM from day one (future build)
-- Implement proper VLAN segmentation for IoT devices
-- Choose a more modular UPS for easier expansion
+- Start with Caddy (skip Traefik migration)
+- ECC RAM from day one (future build)
+- Proper VLAN segmentation for IoT
+- More modular UPS for easier expansion
 
 ### Key Takeaways
-- **Backups are not optional** — Test restores quarterly
-- **Documentation saves hours** — Future you will thank present you
-- **KISS principle** — Complexity is the enemy of reliability
-- **WAF is real** — If the family can't use it, it's failed
+- **Backups are not optional** - Test restores quarterly
+- **Documentation saves hours** - Future you is grateful
+- **KISS principle** - Complexity kills reliability
+- **WAF is real** - Family usability = success metric
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **TrueNAS Community:** For excellent documentation and forum support
-- **r/selfhosted:** Inspiration and troubleshooting assistance
-- **LinuxServer.io:** Quality Docker images with consistent standards
-- **Traefik Team:** Powerful reverse proxy with great Docker integration
-
----
-
-## 📄 License
-
-This documentation is shared under MIT License. Feel free to adapt for your own homelab.
+- **TrueNAS Community** - Excellent documentation
+- **r/selfhosted** - Inspiration and troubleshooting
+- **LinuxServer.io** - Quality Docker images
+- **Caddy Team** - Powerful, simple reverse proxy
 
 ---
 
 **Last Updated:** January 2026  
-**Current TrueNAS Version:** Dragonfish 24.10  
-**Total Storage:** ~13TB usable  
-**Services Running:** 40+ Docker containers  
-**Uptime Target:** 99.9% (8.76 hours downtime/year allowed)
+**TrueNAS Version:** Dragonfish 24.10  
+**Storage:** ~13TB usable  
+**Services:** 40+ Docker containers  
+**Uptime Target:** 99.9%
 
----
-
-*Built with ❤️ and late nights for digital sovereignty and family convenience.*
+*Built with ❤️ for digital sovereignty and family convenience.*
