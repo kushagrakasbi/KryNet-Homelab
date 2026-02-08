@@ -124,7 +124,7 @@ This homelab operates under the **"Home Utility"** model — when the system is 
 
 | Component | Specification |
 |-----------|---------------|
-| **Device** | Repurposed Ubuntu Laptop |
+| **Device** | Skulllsaints Mini PC |
 | **RAM** | 16GB DDR4 |
 | **Storage** | 512GB NVMe SSD |
 | **Power** | ~20W (clamshell mode) |
