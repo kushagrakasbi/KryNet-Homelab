@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-agni # Unique container name
+    restart: unless-stopped
+    network_mode: host          # Required for Tailscale to manage the host network
+    cap_add:                   # Required capabilities
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      # Use the path on your Ubuntu laptop for persistent state
+      - ${DOCKER_CONFIG_PATH}/tailscale:/var/lib/tailscale
+      # Mount the TUN device needed for VPN connections
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      # --- IMPORTANT: Use a new Reusable Auth Key ---
+      # Get one from Tailscale Admin Console -> Settings -> Keys -> Auth Keys
+      # Make sure it's Reusable!
+      - TS_AUTHKEY=${TS_AUTHKEY}
+
+      # --- Hostname ---
+      # Set a unique hostname for this node in the Tailscale admin panel
+      - TS_HOSTNAME=${TS_HOSTNAME:-homelab-network}
+
+      # --- State Directory ---
+      # Explicitly define the state directory inside the container
+      - TS_STATE_DIR=/var/lib/tailscale
+
+      # --- DO NOT INCLUDE THESE ---
+      # Your TrueNAS server handles routing and exit node functionality.
+      # Including them here would cause conflicts.
+      # - TS_ROUTES=192.168.0.0/24
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${LAN_SUBNET:-192.168.1.0/24}
+
+      # Optional: Add tags for ACLs if needed
+      # - TS_TAGS=tag:server,tag:laptop
+
+    # TS_USERSPACE=false is generally the default and not needed unless debugging specific issues.

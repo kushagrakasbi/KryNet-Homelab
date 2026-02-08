@@ -1,0 +1,43 @@
+# AdGuard Home Stack for TrueNAS
+version: "3.8"
+
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    ports:
+      # DNS ports (required)
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Admin panel - AdGuard uses port 80 internally for web UI after setup
+      - "7000:80/tcp"
+      # Initial setup wizard port (only needed during first setup)
+      - "7001:3000/tcp"
+      # DoH (DNS-over-HTTPS) - Using 8443 to avoid conflict with NPM
+      - "8443:443/tcp"      # Alternative HTTPS port for DoH
+      - "8443:443/udp"
+      # DoT (DNS-over-TLS)
+      - "853:853/tcp"
+      # DoQ (DNS-over-QUIC) 
+      - "784:784/udp"
+      - "8853:8853/udp"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/adguardhome/work:/opt/adguardhome/work
+      - ${DOCKER_CONFIG_PATH}/adguardhome/conf:/opt/adguardhome/conf
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+    # Required for DHCP functionality if you plan to use it
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

@@ -1,0 +1,143 @@
+version: "3.8"
+
+services:
+  # --- NOTIFICATIONS ---
+  gotify:
+    image: gotify/server:latest
+    container_name: gotify
+    env_file:
+      - stack.env
+    environment:
+      - TZ=Asia/Kolkata
+      - GOTIFY_DEFAULTUSER_PASS=${GOTIFY_ADMIN_PASS} # SET THIS!
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/gotify/data:/app/data
+    ports:
+      - "8089:80"
+    restart: unless-stopped
+    networks:
+      - agni_net
+
+  # --- STATUS PAGE ---
+  gatus:
+    image: twinproduction/gatus:latest
+    container_name: gatus
+    restart: unless-stopped
+    ports:
+      - "3001:8080"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/gatus/config:/config
+    networks:
+      - agni_net
+
+  # --- BACKUP MONITORING ---
+  healthchecks:
+    image: lscr.io/linuxserver/healthchecks:latest
+    container_name: healthchecks
+    env_file:
+      - stack.env
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - SITE_ROOT=${HEALTHCHECK_URL}
+      - ALLOWED_HOSTS=${SERVER_IP},${HEALTHCHECK_DOMAIN},${HEALTHCHECK_INTERNAL_DOMAIN}
+      - SITE_NAME=Homelab Health
+      - SUPERUSER_EMAIL=${ADMIN_EMAIL}
+      - SUPERUSER_PASSWORD=${GOTIFY_ADMIN_PASS} # SET THIS!
+      - INTEGRATIONS_ALLOW_PRIVATE_IPS=True
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/healthchecks/config:/config
+      - ${DOCKER_CONFIG_PATH}/healthchecks/data:/data
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    networks:
+      - agni_net
+
+  # --- METRICS DB ---
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/prometheus/config:/etc/prometheus
+      - ${DOCKER_CONFIG_PATH}/prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - agni_net
+
+  # --- DASHBOARD ---
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/grafana/data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin # Change inside UI later
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - agni_net
+
+  # --- AGNI SENSORS ---
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - agni_net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "8087:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    devices:
+      - /dev/kmsg
+    networks:
+      - agni_net
+
+  # --- LOGS ---
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8088:8080"
+    environment:
+      - DOZZLE_NO_ANALYTICS=true
+    restart: unless-stopped
+    networks:
+      - agni_net
+
+networks:
+  agni_net:
+    external: true

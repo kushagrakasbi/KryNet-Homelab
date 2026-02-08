@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  adguardhome: # Renamed service for clarity
+    image: adguard/adguardhome:latest
+    container_name: adguardhome # Renamed container for clarity
+    ports:
+      # --- DNS Ports ---
+      # Check if port 53 is free on host! If not, change to e.g., "5353:53/tcp"
+      - "53:53/tcp"
+      - "53:53/udp"
+
+      # --- UI & Setup Ports (DIFFERENT from primary) ---
+      # Admin Panel UI - Changed to 7002 to avoid conflict with primary (7000)
+      - "7000:80/tcp"
+      # Initial Setup - Changed to 7003 to avoid conflict with primary (7001)
+      - "7001:3000/tcp"
+
+      # --- Encrypted DNS Ports (DIFFERENT from primary) ---
+      # DoH (DNS-over-HTTPS) - Changed to 8444
+      - "8444:443/tcp"
+      - "8444:443/udp"
+      # DoT (DNS-over-TLS) - Changed to 854
+      - "854:853/tcp"
+      # DoQ (DNS-over-QUIC) - Changed ports
+      - "785:784/udp"
+      - "8854:8853/udp"
+
+    volumes:
+      # Use absolute paths on the Ubuntu laptop
+      - ${DOCKER_CONFIG_PATH}/adguard/work:/opt/adguardhome/work
+      - ${DOCKER_CONFIG_PATH}/adguard/conf:/opt/adguardhome/conf
+    environment:
+      # PUID/PGID are not typically used by AdGuard Home
+      - TZ=${TZ:-Asia/Kolkata} # Set Timezone (replace if needed, or define TZ in .env)
+    restart: unless-stopped
+    networks:
+      - agni_net # Connect to the network created for Portainer
+
+  # Adguard Home Sync Service
+  adguardhome-sync:
+    image: lscr.io/linuxserver/adguardhome-sync:latest
+    container_name: adguardhome-sync
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # Path to config file inside container
+      - CONFIGFILE=/config/adguardhome-sync.yaml
+    volumes:
+      # Mount the config directory
+      - ${DOCKER_CONFIG_PATH}/adguard-sync:/config
+    ports:
+      # Web UI for monitoring sync
+      - "8082:8080"
+    restart: unless-stopped
+    networks:
+      - agni_net
+
+networks:
+  agni_net:
+    external: true

@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  # ==========================================
+  # Audiobookshelf (Server & Player)
+  # ==========================================
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    ports:
+      - "13378:80"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      # Configs (Using your variable standard)
+      - ${DOCKER_CONFIG_PATH}/audiobookshelf/config:/config
+      - ${DOCKER_CONFIG_PATH}/audiobookshelf/metadata:/metadata
+      # Media
+      - ${DOCKER_DATA_PATH}/media/audiobooks:/audiobooks
+      - ${DOCKER_DATA_PATH}/media/podcasts:/podcasts
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  # ==========================================
+  # Libation (Audible Downloader)
+  # ==========================================
+  # libation:
+  #   image: rmcrackan/libation:latest
+  #   container_name: libation
+  #   restart: unless-stopped
+  #   user: 568:568
+  #   ports:
+  #     - "8083:8080"
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #     - SLEEP_TIME=10000m 
+  #     - LIBATION_BOOKS_DIR=/data
+  #   volumes:
+  #     # Configs
+  #     - ${DOCKER_CONFIG_PATH}/libation:/config
+  #     # Media Mapping (CRITICAL)
+  #     # We map the host audiobook folder to '/data' inside the container
+  #     - ${DOCKER_DATA_PATH}/media/audiobooks:/data
+  #   networks:
+  #     - kry_net
+  #     - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  speedtest:
+    image: openspeedtest/latest
+    container_name: openspeedtest
+    env_file:
+      - stack.env
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - ENABLE_LETSENCRYPT=False
+    ports:
+      - '8992:3000'
+      - '8993:3001'
+    networks:
+      - kry_net
+      - traefik_proxy
+    restart: unless-stopped
+
+  speedtest-tracker:
+    image: lscr.io/linuxserver/speedtest-tracker:latest
+    container_name: speedtest-tracker
+    env_file:
+      # This file has your PUID, PGID, TZ, and POSTGRES_PASS
+      - stack.env
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - DISPLAY_TIMEZONE=${TZ}
+      # --- NEW & REQUIRED ---
+      # This pulls the key you just added to your .env file
+      - APP_KEY=${SPEEDTEST_APP_KEY}
+      
+      # --- Database Connection ---
+      - DB_CONNECTION=pgsql
+      # --- MODIFIED: Point to your central DB server ---
+      - DB_HOST=${DB_HOST:-192.168.1.100}
+      - DB_PORT=5432
+      # --- MODIFIED: Use your central DB credentials ---
+      # This is the DB name you already created
+      - DB_DATABASE=speedtest_tracker
+      # Using your main 'postgres' user
+      - DB_USERNAME=postgres
+      # Using your existing password from the .env file
+      - DB_PASSWORD=${POSTGRES_PASS}
+
+      # Optional: Set your speedtest schedule, e.g., every hour
+      - SPEEDTEST_SCHEDULE="0 * * * *"
+    volumes:
+      # This is the folder you already created
+      - ${DOCKER_CONFIG_PATH}/speedtest-tracker:/config
+    ports:
+      # Optional: Expose locally (using 8093 for UI)
+      - "8093:80"
+    networks:
+      - kry_net
+      - traefik_proxy
+    restart: unless-stopped
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

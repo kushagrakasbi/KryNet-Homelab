@@ -1,0 +1,37 @@
+version: "3"
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    volumes:
+      # FIXED: Points to the root folder where your services.yaml lives
+      - ${DOCKER_CONFIG_PATH}/homepage:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DOCKER_CONFIG_PATH}/homepage/images:/app/public/images
+    environment:
+      - TZ=Asia/Kolkata
+
+      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS:-home.example.com,home.internal.home,127.0.0.1}
+    ports:
+      - "3075:3000"
+    networks:
+      - agni_net
+
+  # glance:
+  #   image: glanceapp/glance:latest
+  #   container_name: glance
+  #   restart: unless-stopped
+  #   volumes:
+  #     # FIXED for v0.7.0: Mounts the 'config' FOLDER, not the file
+  #     - /home/agni/apps/docker/glance/config:/app/config
+  #     - /etc/timezone:/etc/timezone:ro
+  #     - /etc/localtime:/etc/localtime:ro
+  #   ports:
+  #     - "8090:8080"
+  #   networks:
+  #     - agni_net
+
+networks:
+  agni_net:
+    external: true

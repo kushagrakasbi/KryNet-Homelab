@@ -1,0 +1,323 @@
+version: "3.8"
+
+services:
+  # --- VPN Gateway ---
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - kry_net
+      - traefik_proxy
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "8080:8080" # qBittorrent WebUI
+      - "6881:6881" # TCP for torrents
+      - "6881:6881/udp" # UDP for torrents
+      # - "8085:8085" # SABnzbd WebUI
+      # - "8191:8191" # FlareSolverr
+      - "5055:5055" # jellyseers
+      # - "6969:6969"  # Whisparr
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/gluetun:/gluetun
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - FIREWALL_OUTBOUND_SUBNETS=${LAN_SUBNET:-192.168.1.0/24},172.16.3.0/24 # Adjust to your network
+      - FIREWALL_INPUT_PORTS=8080,6881,8081,8191,5055,6969 # Ports for services
+      - VPN_SERVICE_PROVIDER=surfshark
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+    restart: unless-stopped
+
+  # --- Download Clients (Routed through Gluetun) ---
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    depends_on:
+      - gluetun
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/qbittorrent:/config
+      - ${DOCKER_DATA_PATH}:/data # Pointing to the new top-level downloads folder
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - WEBUI_PORT=8080
+    restart: unless-stopped
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    ports:
+      - "8085:8085"
+    networks:
+      - kry_net
+      - traefik_proxy
+    env_file:
+      - stack.env
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/sabnzbd:/config
+      - ${DOCKER_DATA_PATH}:/data
+      # - ${DOCKER_USENET_PATH}/complete:/downloads # Pointing to the usenet complete folder
+      # - ${DOCKER_USENET_PATH}/incomplete:/incomplete-downloads
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+
+  # --- Cloudflare Bypass Proxy ---
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    ports:
+      - "8191:8191"
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+  
+  # --- Indexer Manager ---
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    ports:
+      - "9696:9696"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/prowlarr:/config
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  # --- Media Management ---
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    ports:
+      - "8989:8989"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/sonarr:/config
+      - ${DOCKER_DATA_PATH}:/data
+      # - ${DOCKER_DOWNLOADS_PATH}:/downloads      # For torrents
+      # - ${DOCKER_USENET_PATH}/complete:/usenet   # For usenet
+      # - ${DOCKER_MEDIA_PATH}/TVShows:/tv         # MODIFIED: Path for TV Shows
+      # - ${DOCKER_MEDIA_PATH}/Anime:/anime        # MODIFIED: Path for Anime
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    ports:
+      - "7878:7878"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/radarr:/config
+      - ${DOCKER_DATA_PATH}:/data
+      # - ${DOCKER_DOWNLOADS_PATH}:/downloads      # For torrents
+      # - ${DOCKER_USENET_PATH}/complete:/usenet   # For usenet
+      # - ${DOCKER_MEDIA_PATH}/Movies:/movies      # MODIFIED: Path for Movies
+      # - ${DOCKER_MEDIA_PATH}/Documentaries:/documentaries # MODIFIED: Path for Documentaries
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  # readarr:
+  #   image: lscr.io/linuxserver/readarr:latest
+  #   container_name: readarr
+  #   ports:
+  #     - "8787:8787"
+  #   volumes:
+  #     - ${DOCKER_CONFIG_PATH}/readarr:/config
+  #     - ${DOCKER_DOWNLOADS_PATH}:/downloads      # For torrents
+  #     - ${DOCKER_USENET_PATH}/complete:/usenet   # For usenet
+  #     - ${DOCKER_MEDIA_PATH}/Books:/books        # MODIFIED: Path for Books
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #   restart: unless-stopped
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    ports:
+      - "6767:6767"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/bazarr:/config
+      - ${DOCKER_DATA_PATH}:/data
+      # - ${DOCKER_MEDIA_PATH}/Movies:/movies              # MODIFIED
+      # - ${DOCKER_MEDIA_PATH}/TVShows:/tv                 # MODIFIED
+      # - ${DOCKER_MEDIA_PATH}/Anime:/anime                # MODIFIED
+      # - ${DOCKER_MEDIA_PATH}/Documentaries:/documentaries # MODIFIED
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  # --- Media Server ---
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    ports:
+      - "8096:8096"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/jellyfin:/config
+      - ${DOCKER_DATA_PATH}/media/movies:/data/movies
+      - ${DOCKER_DATA_PATH}/media/series:/data/tvshows
+      - ${DOCKER_DATA_PATH}/media/anime:/data/anime
+      - ${DOCKER_DATA_PATH}/media/documentaries:/data/documentaries
+      - ${DOCKER_DATA_PATH}/media/books:/data/books
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL:-media.example.com}
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  # --- Request Manager ---
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    network_mode: service:gluetun # This is the magic line!
+    depends_on:
+      - gluetun
+    # networks:
+    #   - kry_net
+    #   - traefik_proxy
+    # ports:
+    #   - "5055:5055"
+    # dns:
+    #   - 1.1.1.1  # Cloudflare DNS
+    #   - 8.8.8.8  # Google DNS
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/jellyseerr:/app/config
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - LOG_LEVEL=info
+      - PORT=5055
+    restart: unless-stopped
+
+  #Whisparr
+  whisparr:
+    image: ghcr.io/hotio/whisparr:latest
+    container_name: whisparr
+    ports:
+      - "6969:6969"
+    networks:
+      - kry_net
+      - traefik_proxy
+    restart: unless-stopped
+    # logging:
+    #   driver: json-file
+    #   options:
+    #     max-file: ${DOCKERLOGGING_MAXFILE}
+    #     max-size: ${DOCKERLOGGING_MAXSIZE}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/whisparr:/config
+      - ${DOCKER_DATA_PATH}:/data
+      # Add the path to your media/downloads folder below
+      # - /mnt/orion/data:/data 
+
+  tdarr-server:
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr-server
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+    ports:
+      - "8265:8265" # WebUI
+      - "8266:8266" # Server
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/tdarr/server:/app/server
+      - ${DOCKER_CONFIG_PATH}/tdarr/configs:/app/configs
+      - ${DOCKER_CONFIG_PATH}/tdarr/logs:/app/logs
+      
+      - ${DOCKER_DATA_PATH}:/data # Your unified media path
+      - ${DOCKER_TRANSCODE_CACHE}:/temp # Your transcode cache
+
+  tdarr-node:
+    image: ghcr.io/haveagitgat/tdarr_node:latest
+    container_name: tdarr-node
+    restart: unless-stopped
+    depends_on:
+      - tdarr-server
+    networks:
+      - kry_net
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - nodeID=KrynetPrimeNode
+      - nodeName=KrynetPrimeNode
+      - serverIP=tdarr-server # Connects to the server via Docker network
+      - serverPort=8266
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+
+      - ${DOCKER_CONFIG_PATH}/tdarr/configs:/app/configs
+      - ${DOCKER_CONFIG_PATH}/tdarr/logs-node:/app/logs
+      - ${DOCKER_DATA_PATH}:/data # Your unified media path
+      - ${DOCKER_CONFIG_PATH}/temp:/temp # Your transcode cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

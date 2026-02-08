@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  speedtest:
+    image: openspeedtest/latest
+    container_name: openspeedtest
+    env_file:
+      - stack.env
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - ENABLE_LETSENCRYPT=False
+    ports:
+      # Exposing on 8092 to avoid any conflicts
+      - '8092:3000'
+      - '8093:3001'
+    networks:
+      - agni_net
+    restart: unless-stopped
+
+networks:
+  agni_net:
+    external: true

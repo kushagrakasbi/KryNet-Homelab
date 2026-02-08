@@ -1,0 +1,21 @@
+version: "3.8"
+
+# KryNet-Agni Stack (Network Core)
+# Node: 192.168.1.200
+
+services:
+  # ============================================
+  # Caddy - Reverse Proxy with Cloudflare DNS
+  # ============================================
+  caddy:
+    image: caddy-cloudflare:local
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ${DOCKER_CONFIG_PATH}/caddy/data:/data
+      - ${DOCKER_CONFIG_PATH}/caddy/config:/config
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - ACME_AGREE=true

@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    env_file:
+      - stack.env
+    # Use host networking for auto-discovery of devices on your LAN
+    network_mode: host
+    volumes:
+      # Path for Home Assistant's configuration files
+      - ${DOCKER_CONFIG_PATH}/ha/config:/config
+      # Sync time with the host system
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    # If you add Zigbee/Z-Wave USB sticks, uncomment the devices section
+    # devices:
+    #   - /dev/ttyACM0:/dev/ttyACM0
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    privileged: true
+    restart: unless-stopped

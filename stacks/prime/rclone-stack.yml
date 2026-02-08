@@ -1,0 +1,182 @@
+version: '3.8'
+services:
+  backup-prime:
+    image: rclone/rclone:latest
+    container_name: backup-prime
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+      - PUID=0
+      - PGID=0
+    entrypoint: "/bin/sh"
+    command:
+      - -c
+      - |
+        HC_UUID="$${HC_PRIME_UUID}"
+        
+        while true; do
+          echo "--- Starting Krynet Prime Backup at $(date) ---"
+          
+          wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/start"
+          
+          FAIL=0
+
+          echo "--- Syncing Orion/Apps-Config ---"
+          rclone sync /data/orion-configs $${BACKUP_REMOTE}:Backups/Server-Prime/Configs \
+            --config /config/rclone.conf -L \
+            --ignore-errors \
+            --exclude ".git/**" \
+            --exclude "*.log" \
+            --exclude "*.log.*" \
+            --exclude "*.tmp" \
+            --exclude ".DS_Store" \
+            --exclude "._*" \
+            --exclude "*.sb-*" \
+            --exclude "**/.smbdelete*" \
+            --exclude ".stfolder" \
+            --exclude ".stignore" \
+            --exclude "tailscale/*.state" \
+            --exclude "tailscale/**/*.log*" \
+            --exclude "ipc-socket" \
+            --exclude "*.sock" \
+            --exclude "*.pid" \
+            --exclude "*.lock" \
+            --exclude "__pycache__/**" \
+            --exclude "*.pyc" \
+            --exclude "openwebui/cache/**" \
+            --exclude "jellyseerr/logs/**" \
+            --exclude "MediaCover/**" \
+            --exclude "plex/Cache/**" \
+            --exclude "*.db-wal" \
+            --exclude "*.db-shm" \
+            --exclude "homeassistant/backups/**" \
+            --exclude "homeassistant/tts/**" \
+            --exclude "homeassistant/deps/**" \
+            --exclude "homeassistant/.storage/lovelace.dashboard_*" \
+            --exclude "prometheus/data/**" \
+            --exclude "wal/**" \
+            --exclude "grafana/data/png/**" \
+            --exclude "grafana/data/plugins/**" \
+            --exclude "grafana/data/*.db*" \
+            --exclude "grafana/plugins/**" \
+            --exclude "jellyfin/cache/**" \
+            --exclude "jellyfin/metadata/**" \
+            --exclude "jellyfin/transcodes/**" \
+            --exclude "jellyfin/.cache/**" \
+            --exclude "jellyfin/data/data/subtitles/**" \
+            --exclude "jellyfin/data/plugins/**" \
+            --exclude "prowlarr/Definitions/**" \
+            --exclude "prowlarr/logs/**" \
+            --exclude "prowlarr/Backups/**" \
+            --exclude "radarr/logs/**" \
+            --exclude "radarr/Backups/**" \
+            --exclude "sonarr/logs/**" \
+            --exclude "sonarr/Backups/**" \
+            --exclude "whisparr/logs/**" \
+            --exclude "whisparr/Backups/**" \
+            --exclude "lidarr/logs/**" \
+            --exclude "lidarr/Backups/**" \
+            --exclude "readarr/logs/**" \
+            --exclude "readarr/Backups/**" \
+            --exclude "bazarr/log/**" \
+            --exclude "bazarr/backup/**" \
+            --exclude "tdarr/server/Tdarr/nodePlugins.Zip" \
+            --exclude "tdarr/server/Tdarr/**" \
+            --exclude "immich/db/**" \
+            --exclude "immich/postgres/**" \
+            --exclude "immich/ml/**" \
+            --exclude "immich/uploads/library/**" \
+            --exclude "immich/uploads/encoded-video/**" \
+            --exclude "immich/uploads/thumbs/**" \
+            --exclude "immich/uploads/profile/**" \
+            --exclude "immich/uploads/upload/**" \
+            --exclude "portainer/compose/**" \
+            --exclude "portainer/docker_snapshots/**" \
+            --exclude "adguardhome/work/data/querylog.json*" \
+            --exclude "adguardhome/work/data/stats.db*" \
+            --exclude "qbittorrent/qBittorrent/logs/**" \
+            --exclude "qbittorrent/qBittorrent/cache/**" \
+            --exclude "qbittorrent/qBittorrent/BT_backup/**" \
+            --exclude "qbittorrent/qBittorrent/GeoDB/**" \
+            --exclude "qbittorrent/qBittorrent/nova3/__pycache__/**" \
+            --exclude "qbittorrent/qBittorrent/nova3/engines/__pycache__/**" \
+            --exclude "homarr/data/logs/**" \
+            --exclude "uptime-kuma/**" \
+            --exclude "syncthing/index-v2/**" \
+            --exclude "paperless/media/documents/**" \
+            --exclude "jellyfin/data/metadata/**" \
+            --exclude "astroluma/db/**" \
+            --exclude "freshrss/log/**" \
+            --exclude "freshrss/php/**" \
+            --exclude "freshrss/nginx/**" \
+            --exclude "freshrss/www/**" \
+            --exclude "speedtest-tracker/log/**" \
+            --exclude "speedtest-tracker/php/**" \
+            --exclude "speedtest-tracker/nginx/**" \
+            --transfers 4 \
+            --verbose
+          
+          if [ $? -ne 0 ]; then FAIL=1; fi
+
+          echo "--- Syncing Andromeda/Apps ---"
+          rclone sync /data/andromeda-apps $${BACKUP_REMOTE}:Backups/Server-Prime/Apps \
+            --config /config/rclone.conf -L \
+            --ignore-errors \
+            --exclude ".git/**" \
+            --exclude "*.log" \
+            --exclude "*.log.*" \
+            --exclude "*.tmp" \
+            --exclude ".DS_Store" \
+            --exclude "._*" \
+            --exclude "*.sb-*" \
+            --exclude "sync/**" \
+            --exclude "syncthing/**" \
+            --exclude "paperless/scratch/**" \
+            --exclude "paperless/media/documents/thumbnails/**" \
+            --exclude "jellyfin/cache/**" \
+            --exclude "jellyfin/metadata/**" \
+            --exclude "jellyfin/transcodes/**" \
+            --exclude "prowlarr/Definitions/**" \
+            --exclude "prowlarr/logs/**" \
+            --exclude "prowlarr/Backups/**" \
+            --exclude "radarr/logs/**" \
+            --exclude "radarr/Backups/**" \
+            --exclude "sonarr/logs/**" \
+            --exclude "sonarr/Backups/**" \
+            --exclude "whisparr/logs/**" \
+            --exclude "whisparr/Backups/**" \
+            --exclude "lidarr/logs/**" \
+            --exclude "lidarr/Backups/**" \
+            --exclude "readarr/logs/**" \
+            --exclude "readarr/Backups/**" \
+            --exclude "bazarr/log/**" \
+            --exclude "bazarr/backup/**" \
+            --exclude "immich/db/**" \
+            --exclude "immich/postgres/**" \
+            --exclude "immich/ml/**" \
+            --exclude "immich/uploads/library/**" \
+            --exclude "immich/uploads/encoded-video/**" \
+            --exclude "immich/uploads/thumbs/**" \
+            --exclude "immich/uploads/profile/**" \
+            --exclude "immich/uploads/upload/**" \
+            --transfers 4 \
+            --verbose
+
+          if [ $? -ne 0 ]; then FAIL=1; fi
+
+          echo "--- Backup Finished. Sleeping for 12h ---"
+          
+          if [ $$FAIL -eq 0 ]; then
+              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID"
+              echo "Healthcheck: SUCCESS"
+          else
+              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/fail"
+              echo "Healthcheck: FAILED"
+          fi
+          
+          sleep 43200
+        done
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/rclone:/config
+      - ${DOCKER_CONFIG_PATH}:/data/orion-configs:ro
+      - ${APP_DATA_PATH}:/data/andromeda-apps:ro

@@ -1,0 +1,84 @@
+version: '3.8'
+services:
+  backup-agni:
+    image: rclone/rclone:latest
+    container_name: backup-agni
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+      - PUID=1000
+      - PGID=1000
+    entrypoint: "/bin/sh"
+    command:
+      - -c
+      - |
+        HC_UUID="$${HC_AGNI_UUID}"
+        
+        while true; do
+          echo "--- Starting Agni Backup at $(date) ---"
+          
+          wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/start"
+          
+          rclone sync /data $${BACKUP_REMOTE}:Backups/Server-Agni \
+            --config /config/rclone.conf \
+            --ignore-errors \
+            --exclude ".git/**" \
+            --exclude "*.log" \
+            --exclude "*.log.*" \
+            --exclude "*.tmp" \
+            --exclude ".DS_Store" \
+            --exclude "._*" \
+            --exclude ".Spotlight-V100/**" \
+            --exclude ".Trashes/**" \
+            --exclude "**/.smbdelete*" \
+            --exclude "*.sb-*" \
+            --exclude "@eaDir/**" \
+            --exclude "__pycache__/**" \
+            --exclude "*.pyc" \
+            --exclude "tailscale/*.state" \
+            --exclude "tailscale/tailscaled.sock" \
+            --exclude "cloudflared/*.sock" \
+            --exclude "*.sock" \
+            --exclude "*.db-wal" \
+            --exclude "*.db-shm" \
+            --exclude "prometheus/**" \
+            --exclude "wal/**" \
+            --exclude "chunks_head/**" \
+            --exclude "grafana/data/png/**" \
+            --exclude "grafana/data/plugins/**" \
+            --exclude "grafana/data/sessions/**" \
+            --exclude "grafana/data/log/**" \
+            --exclude "grafana/data/csv/**" \
+            --exclude "gotify/data/images/**" \
+            --exclude "ha/config/home-assistant_v2.db-wal" \
+            --exclude "ha/config/home-assistant_v2.db-shm" \
+            --exclude "ha/config/.storage/lovelace.dashboard_*" \
+            --exclude "ha/config/tts/**" \
+            --exclude "ha/config/deps/**" \
+            --exclude "ha/config/backups/**" \
+            --exclude "portainer/docker_snapshots/**" \
+            --exclude "portainer/compose/**" \
+            --exclude "caddy/data/caddy/locks/**" \
+            --exclude "gatus/data/**" \
+            --exclude "adguard/work/data/sessions.db*" \
+            --exclude "adguard/work/data/querylog.json*" \
+            --exclude "adguard/work/data/stats.db*" \
+            --exclude "healthchecks/data/**" \
+            --transfers 4 \
+            --checkers 8 \
+            --verbose
+          
+          if [ $? -eq 0 ]; then
+              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID"
+              echo "Backup SUCCESS"
+          else
+              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/fail"
+              echo "Backup FAILED"
+          fi
+          
+          echo "--- Sleeping for 12h ---"
+          sleep 43200
+        done
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/rclone/config:/config
+      - ${DOCKER_CONFIG_PATH}:/data:ro

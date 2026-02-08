@@ -1,247 +1,199 @@
-# 🌌 Project KryNet: Production-Grade Private Cloud
+# 🌌 KryNet Homelab: Production-Grade Private Cloud
 
 **Architected for Resilience | Powered by ZFS | Secured by Zero Trust**
 
-Welcome to KryNet, a production-grade private cloud ecosystem serving a family of four. This repository documents the complete hardware, software, and networking architecture of a self-hosted infrastructure that rivals commercial cloud services while maintaining complete data sovereignty.
+<p align="center">
+  <img src="https://img.shields.io/badge/TrueNAS_SCALE-Dragonfish_24.10-0078D7?style=for-the-badge" alt="TrueNAS SCALE"/>
+  <img src="https://img.shields.io/badge/Ubuntu-24.04_LTS-E95420?style=for-the-badge" alt="Ubuntu"/>
+  <img src="https://img.shields.io/badge/Docker-40%2B_Containers-2496ED?style=for-the-badge" alt="Docker"/>
+  <img src="https://img.shields.io/badge/Storage-13TB_ZFS-green?style=for-the-badge" alt="Storage"/>
+</p>
+
+A production-grade private cloud ecosystem serving a family of four. This repository documents the complete hardware, software, and networking architecture of a self-hosted infrastructure that rivals commercial cloud services while maintaining complete data sovereignty.
+
+---
+
+## 🗺️ Quick Navigation
+
+| Document | Description |
+|----------|-------------|
+| [**📖 README**](#-table-of-contents) | This file - Project overview |
+| [**🔥 Agni Server**](docs/AGNI-SERVER.md) | Network Core documentation |
+| [**🌟 Prime Server**](docs/PRIME-SERVER.md) | Storage & Media Hub documentation |
+| [**🌐 Networking**](docs/NETWORKING-QUICKREF.md) | Quick networking reference |
 
 ---
 
 ## 📋 Table of Contents
 
-1. [Philosophy & Design Principles](#philosophy--design-principles)
-2. [Hardware Architecture](#hardware-architecture)
-3. [Storage Architecture (ZFS)](#storage-architecture)
-4. [Networking Stack](#networking-stack)
-5. [Service Ecosystem](#service-ecosystem)
-6. [Backup & Resilience](#backup--resilience)
-7. [Security Implementation](#security-implementation)
-8. [Monitoring & Operations](#monitoring--operations)
-9. [Future Roadmap](#future-roadmap)
+1. [Philosophy & Design Principles](#-philosophy--design-principles)
+2. [Architecture Overview](#-architecture-overview)
+3. [Hardware Infrastructure](#-hardware-infrastructure)
+4. [Storage Architecture](#-storage-architecture)
+5. [Networking Stack](#-networking-stack)
+6. [Service Ecosystem](#-service-ecosystem)
+7. [Security Implementation](#-security-implementation)
+8. [Backup & Resilience](#-backup--resilience)
+9. [Monitoring & Operations](#-monitoring--operations)
+10. [Getting Started](#-getting-started)
+11. [Directory Structure](#-directory-structure)
+12. [Future Roadmap](#-future-roadmap)
 
 ---
 
 ## 🎯 Philosophy & Design Principles
 
-KryNet operates under the **"Home Utility"** model — when the system is down, the house is "broken."
+This homelab operates under the **"Home Utility"** model — when the system is down, the house is "broken."
 
 ### Core Pillars
 
-**Digital Sovereignty**
-- 100% ownership of 500GB+ family photos, documents, and media
-- No monthly storage subscriptions or vendor lock-in
-- Complete control over personal data lifecycle
-- Successful migration from Google Photos to self-hosted Immich
-
-**The WAF (Wife Approval Factor)**
-- Services must match "Big Tech" reliability and UX
-- 99.9% uptime target (8.76 hours downtime/year)
-- If kids can't watch movies or wife can't backup photos, system is "down"
-- Seamless experience across all devices
-
-**Zero Trust Architecture**
-- No open ports exposed to internet
-- Identity-based access via Google OAuth 2.0
-- Split-horizon DNS for intelligent routing
-- All external traffic through encrypted tunnels
-
-**Production Standards**
-- Infrastructure-as-Code via Docker Compose
-- Automated health monitoring and alerting
-- Centralized logging with Dozzle
-- Quarterly backup restoration tests
+| Principle | Implementation |
+|-----------|----------------|
+| **Digital Sovereignty** | 100% data ownership, no vendor lock-in, successful migration from Google Photos |
+| **WAF (Wife Approval Factor)** | Services must match "Big Tech" reliability and UX |
+| **Zero Trust Architecture** | No open ports, identity-based access via OAuth 2.0 |
+| **Production Standards** | Infrastructure-as-Code, automated monitoring, quarterly backup tests |
+| **Graceful Degradation** | Multiple redundant paths for all services |
 
 ---
 
-## 🖥️ Hardware Architecture
+## 🏗️ Architecture Overview
 
-### KryNet-Prime (Primary Server)
-
-| Component | Specification |
-|-----------|---------------|
-| **Chassis** | Fractal Design Node 804 (Dual-chamber, optimized for HDD cooling) |
-| **CPU** | Intel i5-7600K (4C/4T @ 3.8GHz) - Strong single-core for microservices |
-| **RAM** | 32GB Crucial DDR4 - ZFS ARC + 40+ containers + ML workloads |
-| **GPU** | NVIDIA GTX 1060 6GB - NVENC transcoding + Immich facial recognition |
-| **OS** | TrueNAS SCALE (Dragonfish 24.10) - Linux-based NAS with Docker |
-| **Network** | 1Gbps Ethernet (Intel I219-V) |
-| **IP** | 192.168.0.100 (Static DHCP) |
-
-**Role:** Storage hub, media processing, AI workloads, core infrastructure
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                              INTERNET                                     │
+└─────────────────────────────────┬────────────────────────────────────────┘
+                                  │
+           ┌──────────────────────┼──────────────────────┐
+           │                      │                      │
+    ┌──────▼──────┐        ┌──────▼──────┐       ┌──────▼──────┐
+    │ Cloudflare  │        │  Tailscale  │       │   Direct    │
+    │   Tunnel    │        │  Mesh VPN   │       │    LAN      │
+    │ (Public)    │        │ (Admin)     │       │ (Home)      │
+    └──────┬──────┘        └──────┬──────┘       └──────┬──────┘
+           │                      │                      │
+           └──────────────────────┼──────────────────────┘
+                                  │
+                    ╔═════════════▼═════════════╗
+                    ║     🔥 AGNI SERVER        ║
+                    ║     (Network Core)        ║
+                    ║                           ║
+                    ║  • Caddy Reverse Proxy    ║
+                    ║  • Cloudflared Tunnel     ║
+                    ║  • AdGuard DNS (Secondary)║
+                    ║  • Tailscale VPN          ║
+                    ║  • Prometheus + Grafana   ║
+                    ║  • Home Assistant         ║
+                    ╚═════════════╦═════════════╝
+                                  ║
+                    ╔═════════════▼═════════════╗
+                    ║     🌟 PRIME SERVER       ║
+                    ║     (Storage Hub)         ║
+                    ║                           ║
+                    ║  • TrueNAS SCALE          ║
+                    ║  • 13TB ZFS Storage       ║
+                    ║  • Jellyfin + *Arr Stack  ║
+                    ║  • Immich Photos          ║
+                    ║  • AdGuard DNS (Primary)  ║
+                    ║  • GPU Transcoding        ║
+                    ╚═══════════════════════════╝
+```
 
 ---
 
-### KryNet-Legion (Secondary Sentinel)
+## 🖥️ Hardware Infrastructure
+
+### Server Fleet
+
+| Server | Hardware | OS | Role |
+|--------|----------|----|----|
+| **🌟 Prime** | i5-7600K, 32GB RAM, GTX 1060 | TrueNAS SCALE | Storage Hub |
+| **🔥 Agni** | 16GB RAM, 512GB NVMe | Ubuntu 24.04 | Network Core |
+
+### Prime Server Specs
 
 | Component | Specification |
 |-----------|---------------|
-| **Hardware** | Repurposed Ubuntu Server Laptop |
-| **OS** | Ubuntu Server 24.04 LTS |
+| **Chassis** | Fractal Design Node 804 |
+| **CPU** | Intel i5-7600K (4C/4T @ 3.8GHz) |
+| **RAM** | 32GB DDR4 (ZFS ARC + ML workloads) |
+| **GPU** | NVIDIA GTX 1060 6GB (NVENC + Immich) |
+| **Storage** | 13TB+ across 3 ZFS pools |
+
+### Agni Server Specs
+
+| Component | Specification |
+|-----------|---------------|
+| **Device** | Repurposed Ubuntu Laptop |
 | **RAM** | 16GB DDR4 |
 | **Storage** | 512GB NVMe SSD |
-| **Network** | 1Gbps Ethernet |
-| **IP** | 192.168.0.200 (Static DHCP) |
-| **Power** | ~20W (clamshell mode, display off) |
-
-**Services:**
-- AdGuard Home (Secondary DNS with auto-failover)
-- Syncthing (Real-time config backup from Prime)
-- Portainer Agent (Remote management)
-- Tailscale (Mesh VPN node)
-- OpenSpeedTest (Network testing)
-
-**Planned Upgrade:** Awaiting **SkullSaints Agni Mini-PC** (Intel N150, 16GB RAM, built-in LCD) for lower power consumption and better form factor.
+| **Power** | ~20W (clamshell mode) |
 
 ---
 
 ## 💾 Storage Architecture
 
-All storage managed via **TrueNAS SCALE** with ZFS providing enterprise-grade data integrity.
+All storage managed via **TrueNAS SCALE** with ZFS data integrity.
 
 ### Storage Pools
 
 | Pool | Hardware | Type | Capacity | Purpose |
 |------|----------|------|----------|---------|
-| **orion** | 2x 4TB WD Red Plus | Mirror | ~4TB | **The Vault** - App configs, databases |
-| **comet** | 2x 1TB NVMe SSD | Mirror | ~1TB | **The Ingest** - Downloads, Tdarr cache |
-| **andromeda** | 1x 8TB Seagate IronWolf | Single | 8TB | **The Archive** - Media, photos, documents |
+| **orion** | 2x 4TB WD Red Plus | Mirror | ~4TB | App configs, databases |
+| **comet** | 2x 1TB NVMe SSD | Mirror | ~1TB | Downloads, transcode cache |
+| **andromeda** | 1x 8TB Seagate IronWolf | Single | 8TB | Media, photos, documents |
 
-### Dataset Structure
+### ZFS Features
 
-```
-/mnt/orion/apps-config/     # All Docker container configs (30+ services)
-/mnt/comet/downloads/       # qBittorrent & SABnzbd active downloads
-/mnt/comet/tdarr-cache/     # Transcoding temporary files
-/mnt/andromeda/apps/immich/ # 500GB+ family photos & videos
-/mnt/andromeda/apps/paperless/ # Scanned documents
-/mnt/andromeda/data/media/  # Movies, TV shows, documentaries
-```
-
-### ZFS Configuration
-
-**Snapshot Strategy:**
-- **orion:** Every 6 hours, 48h retention (config protection)
-- **comet:** Daily, 7-day retention (download protection)
-- **andromeda:** Weekly, 4-week retention (media protection)
-
-**Data Integrity:**
-- Automatic checksum verification on every read
-- Self-healing from mirror copies
-- Weekly scrubs (Sundays 02:00 AM)
-- SMART tests: Long monthly, short weekly
-
-**Performance:**
-- ARC: ~20GB RAM allocated
-- Compression: LZ4 (~15% space savings)
-- Recordsize: 128K (databases), 1M (media)
+- ✅ **Automatic checksums** on every read
+- ✅ **Self-healing** from mirror copies
+- ✅ **Snapshots** for point-in-time recovery
+- ✅ **LZ4 compression** (~15% space savings)
+- ✅ **Weekly scrubs** for data integrity
 
 ---
 
-## 🌐 Networking Stack (The Secret Sauce)
+## 🌐 Networking Stack
 
-### Architecture Overview
+### Multi-Path Architecture
 
 ```
-Internet
-    │
-    ├─→ Cloudflare Tunnel (cloudflared) ─→ Caddy ─→ Services
-    ├─→ Tailscale VPN Mesh ──────────────→ Caddy ─→ Services  
-    └─→ LAN → AdGuard (Split-Horizon) ───→ Caddy ─→ Services
+Same URL → Different Paths Based on Location
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📍 At Home (LAN)
+   photos.example.com → AdGuard DNS → Local IP → Caddy → Immich
+   Speed: 1Gbps | Latency: <1ms
+
+🌍 Remote (Internet)
+   photos.example.com → Cloudflare → Tunnel → Agni → Caddy → Immich
+   Speed: Upload limited | Auth: OAuth
+
+🔐 VPN (Tailscale)
+   photos.internal.home → Tailscale → Direct P2P → Caddy → Immich
+   Speed: P2P optimized | Encryption: WireGuard
 ```
 
-### 4.1 Reverse Proxy: Caddy v2
+### Key Components
 
-**Evolution:**
+| Component | Purpose | Server |
+|-----------|---------|--------|
+| **Caddy** | Reverse proxy with auto-HTTPS | Agni |
+| **Cloudflared** | Secure tunnel to Cloudflare | Agni |
+| **AdGuard Home** | DNS + ad blocking | Both (synced) |
+| **Tailscale** | Mesh VPN | Both |
+
+### Why Caddy Over Traefik?
+
 1. **Nginx Proxy Manager** → Retired (lack of automation)
 2. **Traefik v3** → Replaced (label complexity)
 3. **Caddy v2** → Current (simplicity + power)
 
-**Why Caddy:**
+**Benefits:**
 - Centralized Caddyfile (Infrastructure-as-Code)
 - Native Cloudflare DNS-01 challenge
 - 3 lines config vs 15+ Traefik labels
 - Automatic HTTPS with zero configuration
-- HTTP/3 (QUIC) support enabled
-
-**Configuration Pattern:**
-```caddyfile
-*.mydomain.com, *.lan.mydomain2.com {
-    tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-    }
-    
-    @immich host photos.mydomain.com photos.lan.mydomain2.com
-    handle @immich {
-        reverse_proxy immich-server:2283
-    }
-}
-```
-
-### 4.2 Split-Horizon DNS
-
-**Primary:** AdGuard Home on Prime (192.168.0.100)  
-**Secondary:** AdGuard Home on Legion (192.168.0.200)  
-**Sync:** AdGuard Home Sync (every 5 minutes)
-
-| Location | URL | Resolves To | Speed |
-|----------|-----|-------------|-------|
-| Home LAN | `photos.mydomain.com` | 192.168.0.100 | 1Gbps |
-| Remote | `photos.mydomain.com` | Cloudflare Tunnel | ISP Upload |
-| Tailscale | `photos.lan.mydomain2.com` | 100.x.x.x | P2P Mesh |
-
-**Benefits:**
-- Local traffic stays on LAN (no internet consumption)
-- Services work even if internet is down
-- Transparent to users (same URL everywhere)
-
-### 4.3 Domain Strategy
-
-**mydomain.com (Public):**
-- Cloudflare-managed DNS
-- Exposed via Cloudflare Tunnel
-- Google OAuth 2.0 protected
-- Services: Immich, Jellyfin, Jellyseerr, Homepage
-
-**mydomain2.com (Internal/VPN):**
-- AdGuard DNS rewrites
-- `*.lan.mydomain2.com` → LAN access
-- No public DNS records (security)
-- Admin interfaces only
-
-### 4.4 Cloudflare Tunnel
-
-**How It Works:**
-```
-User → Cloudflare Edge → Encrypted Tunnel → Caddy → Service
-```
-
-**Benefits:**
-- No open ports on router
-- Home IP hidden behind Cloudflare
-- DDoS protection included
-- Works behind CGNAT
-
-**Security:** Cloudflare Zero Trust Access
-- Google OAuth 2.0 authentication
-- Email whitelist (family members only)
-- 24-hour session duration
-
-### 4.5 Tailscale Mesh VPN
-
-**Prime Configuration:**
-- Subnet router (advertises 192.168.0.0/24)
-- Exit node (route internet through home)
-- MagicDNS enabled
-
-**Use Cases:**
-- SSH administrative access
-- Access internal services (Portainer, logs)
-- Secure public Wi-Fi usage
-- Direct NAS access via Samba
-
-**Security:**
-- End-to-end WireGuard encryption
-- Key-based authentication
-- Per-device ACLs
 
 ---
 
@@ -249,89 +201,70 @@ User → Cloudflare Edge → Encrypted Tunnel → Caddy → Service
 
 **40+ Docker containers** deployed via Portainer Stacks.
 
-### Media Automation (*arr Stack)
+### Media Stack
 
-**Workflow:**
-```
-Jellyseerr (Request) → Prowlarr (Search) → Sonarr/Radarr (Manage)
-→ qBittorrent/SABnzbd (Download) → Tdarr (Optimize) → Jellyfin (Stream)
+```mermaid
+graph TD
+    subgraph "User Interaction"
+        A[User] -->|Requests Media| B(Jellyseerr)
+    end
+
+    subgraph "Automation"
+        B -->|Sends Request| C{Sonarr / Radarr}
+        C -->|Searches via| D(Prowlarr)
+        C -->|Imports Files| G[Media Library]
+        H(Bazarr) -->|Downloads Subtitles| G
+    end
+
+    subgraph "VPN Protected"
+        D -->|Sends to| E{qBittorrent / SABnzbd}
+        E -->|Downloads| F[Temp Folder]
+        subgraph "Gluetun VPN"
+            E
+        end
+    end
+
+    subgraph "Playback"
+        I(Jellyfin) -->|Serves Media| G
+        J[Client Devices] -->|Streams from| I
+    end
+
+    F -->|Imported by Arr| G
 ```
 
 | Service | Purpose | Access |
 |---------|---------|--------|
-| Jellyseerr | User requests | `request.mydomain.com` |
-| Prowlarr | Indexer management | Admin only |
-| Sonarr | TV automation | Admin only |
-| Radarr | Movie automation | Admin only |
-| Bazarr | Subtitle management | Admin only |
-| qBittorrent | Torrent client (via Gluetun VPN) | Admin only |
-| SABnzbd | Usenet client | Admin only |
-| Tdarr | GPU transcoding to HEVC (~40% savings) | Admin only |
-| Jellyfin | Media streaming (4K hardware accel) | `media.mydomain.com` |
+| **Jellyfin** | Media streaming (4K hardware accel) | Public |
+| **Jellyseerr** | User media requests | Public |
+| **Sonarr/Radarr** | TV/Movie automation | Admin only |
+| **Prowlarr** | Indexer management | Admin only |
+| **Bazarr** | Subtitle management | Admin only |
+| **qBittorrent** | Torrent client (VPN protected) | Admin only |
+| **Tdarr** | GPU transcoding to HEVC (~40% savings) | Admin only |
 
-**Gluetun VPN:** All downloads through Surfshark WireGuard with kill switch.
+### Photo Management
 
-### Personal Data & Productivity
+| Service | Purpose | Access |
+|---------|---------|--------|
+| **Immich** | Google Photos replacement | Public (OAuth) |
 
-**Immich (Photo Management)**
-- 500GB+ migrated from Google Photos
+**Features:**
 - GPU facial recognition
 - Natural language search ("beach photos")
-- Access: `photos.mydomain.com`
+- 500GB+ migrated from Google Photos
 
-**Paperless-ngx (Documents)**
-- OCR for scanned mail/documents
-- Automatic tagging and categorization
-- Storage: andromeda pool
-- Mobile scan → auto-import workflow
+### Monitoring & Infrastructure
 
-**FreshRSS** - RSS feed aggregation (currently disabled)
-
-### AI Playground
-
-**LiteLLM** - Centralized LLM proxy gateway (currently disabled)
-**OpenWebUI** - ChatGPT-style interface (currently disabled)
-
-### Dashboards
-
-**Homepage** - Primary dashboard with service status  
-**Homarr** - Alternative icon-based launcher
-
-### Home Automation
-
-**Home Assistant** - Smart home control (host network mode)
-
----
-
-## 🔄 Backup & Resilience
-
-### 3-2-1 Backup Rule
-
-**3 Copies:**
-1. Live data on ZFS pools
-2. Local mirror via Syncthing to Legion
-3. Encrypted cloud backup (Backblaze B2)
-
-**2 Media:**
-- HDD (orion, andromeda)
-- SSD (comet)
-
-**1 Offsite:**
-- Critical photos encrypted (age + rclone)
-- Nightly incremental sync at 02:00 AM
-
-### Application Backups
-
-**Syncthing Mirroring:**
-- Source: `/mnt/orion/apps-config` (Prime)
-- Destination: Legion (read-only sync)
-- Real-time with 60s scan interval
-
-**What's Backed Up:**
-- All Portainer stack configs
-- Environment files
-- Database dumps (weekly cron)
-- SSL certificates
+| Service | Purpose |
+|---------|---------|
+| **Prometheus** | Metrics collection |
+| **Grafana** | Visualization dashboards |
+| **Gatus** | Status page |
+| **Gotify** | Push notifications |
+| **Healthchecks** | Backup monitoring |
+| **Dozzle** | Container logs |
+| **Homepage** | Dashboard |
+| **Home Assistant** | Smart home automation |
 
 ---
 
@@ -339,27 +272,54 @@ Jellyseerr (Request) → Prowlarr (Search) → Sonarr/Radarr (Manage)
 
 ### Zero Trust Layers
 
-1. **Network:** No router ports open, tunnels only
-2. **Application:** Google OAuth for public services
-3. **Service:** Docker network isolation
+```
+Layer 1: Network
+└─ No open ports on router
+└─ All traffic via encrypted tunnels
 
-### Docker Security
+Layer 2: Authentication
+└─ Cloudflare Access (Google OAuth)
+└─ Only whitelisted family emails
 
-**Networks:**
-- `kry_net` - Internal service communication
-- `traefik_proxy` - Web-exposed containers
-- `host` - Tailscale, Home Assistant, AdGuard
+Layer 3: Container Isolation
+└─ Separate Docker networks
+└─ Minimal privileged containers
 
-**Isolation:**
-- User namespacing (PUID/PGID)
-- Read-only mounts where possible
-- Minimal `privileged` flag usage
+Layer 4: VPN Kill Switch
+└─ Gluetun blocks non-VPN traffic
+└─ Download clients protected
+```
 
-### VPN Kill Switch (Gluetun)
+### Network Isolation
 
-- Firewall blocks traffic if VPN drops
-- DNS leak protection
-- Only allows local networks + VPN server
+| Network | Purpose | Containers |
+|---------|---------|------------|
+| `kry_net` | Internal communication | All backend |
+| `traefik_proxy` | Web-exposed only | Caddy-facing |
+| `host` | System access | Tailscale, HA, AdGuard |
+
+---
+
+## 🔄 Backup & Resilience
+
+### 3-2-1 Backup Rule
+
+```
+3 Copies          2 Media Types       1 Offsite
+─────────         ─────────────       ─────────
+• Live (ZFS)      • HDD (orion)       • Cloud
+• Syncthing       • SSD (comet)         encrypted
+• Cloud                                 nightly
+```
+
+### Redundancy
+
+| Component | Failure Mode | Fallback |
+|-----------|--------------|----------|
+| DNS | Prime down | Agni secondary |
+| Reverse Proxy | Agni down | N/A (planned) |
+| VPN | Prime down | Agni subnet routing |
+| Monitoring | Agni down | N/A (single point) |
 
 ---
 
@@ -367,87 +327,145 @@ Jellyseerr (Request) → Prowlarr (Search) → Sonarr/Radarr (Manage)
 
 ### Health Monitoring
 
-**Uptime Kuma**
-- HTTP 200 checks for all services
-- Docker container health status
-- Disk space alerts (80% warning)
-- Certificate expiry warnings
-
-**Notifications:** Gotify push to mobile
-
-### Metrics & Logging
-
-**Prometheus** - Metrics collection (15-day retention)  
-**Grafana** - Visualization dashboards  
-**Dozzle** - Real-time container logs  
+| Service | Purpose | Alerts |
+|---------|---------|--------|
+| **Gatus** | HTTP health checks | Service down |
+| **Healthchecks** | Dead man's switch | Backup failures |
+| **Prometheus** | Metrics collection | Threshold alerts |
+| **Grafana** | Visualization | Dashboard |
 
 ### Automated Maintenance
 
-**Watchtower** - Daily updates at 04:00 AM (currently disabled)  
-**Speedtest Tracker** - Hourly ISP monitoring
+- 🔄 **Backups:** Every 12 hours to cloud
+- 🧹 **ZFS Scrubs:** Weekly (Sundays 02:00 AM)
+- 📊 **Speedtest:** Hourly ISP monitoring
+- ❤️ **Health Pings:** Every 5 minutes
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Domain with Cloudflare DNS
+- Tailscale account
+- Cloud storage account (for backups)
+
+### Quick Setup
+
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/yourusername/homelab.git
+   cd homelab
+   ```
+
+2. **Configure environment:**
+   ```bash
+   cp stacks/agni/.env.example stacks/agni/.env
+   cp stacks/prime/.env.example stacks/prime/.env
+   # Edit with your credentials
+   ```
+
+3. **Deploy stacks:**
+   ```bash
+   cd stacks/agni
+   docker compose -f caddy-stack.yml up -d
+   docker compose -f cloudflared-stack.yml up -d
+   # ... continue with other stacks
+   ```
+
+4. **Configure Cloudflare Tunnel:**
+   - Create tunnel in Zero Trust dashboard
+   - Add token to `CF_TOKEN` env variable
+   - Configure public hostnames
+
+5. **Setup AdGuard DNS rewrites:**
+   - Add split-horizon rules
+   - Point router DHCP to AdGuard IPs
+
+---
+
+## 📁 Directory Structure
+
+```
+homelab/
+├── README.md                   # This file
+├── docs/
+│   ├── AGNI-SERVER.md         # Agni documentation
+│   ├── PRIME-SERVER.md        # Prime documentation
+│   ├── NETWORKING-QUICKREF.md # Quick networking reference
+│   └── INDEX.md               # Documentation index
+├── stacks/
+│   ├── agni/                  # Agni Docker stacks
+│   │   ├── .env.example
+│   │   ├── caddy-stack.yml
+│   │   ├── cloudflared-stack.yml
+│   │   ├── adguard-stack.yml
+│   │   ├── tailscale.yml
+│   │   ├── monitoring-stack.yml
+│   │   ├── homeassistant.yml
+│   │   ├── dashboard-stack.yml
+│   │   ├── rclone-stack.yml
+│   │   └── ...
+│   └── prime/                 # Prime Docker stacks
+│       ├── .env.example
+│       ├── media-stack.yml
+│       ├── immich.yml
+│       ├── dns-stack.yml
+│       ├── monitoring-sensors.yml
+│       └── ...
+└── LICENSE
+```
 
 ---
 
 ## 🚀 Future Roadmap
 
 ### Infrastructure
-- [ ] Deploy SkullSaints Agni (replacing Legion)
+- [ ] Deploy dedicated mini-PC (replacing laptop)
 - [ ] Vaultwarden password manager
 - [ ] Nextcloud collaborative editing
-- [ ] Grafana custom dashboards
 
 ### Storage
-- [ ] Expand orion: Add 2x 8TB (mirror vdev)
-- [ ] Convert andromeda to mirror (2nd 8TB)
-- [ ] Hot spare drive for auto-resilver
-
-### Networking
-- [ ] WireGuard backup VPN
-- [ ] IPv6 support throughout stack
+- [ ] Expand orion pool (additional mirror vdev)
+- [ ] Convert andromeda to mirror
+- [ ] Hot spare drive
 
 ### Services
-- [ ] Audiobookshelf for audiobooks
-- [ ] Calibre-Web for ebooks
 - [ ] Mealie recipe management
-- [ ] Re-enable AI stack (LiteLLM + OpenWebUI)
+- [ ] Calibre-Web ebook library
+- [ ] AI stack (LiteLLM + OpenWebUI)
 
 ---
 
-## 📚 Lessons Learned
+## 📈 Stats
 
-### What Went Right
-- ZFS saved data from drive errors multiple times
-- Split-horizon DNS eliminates internet dependency
-- GPU transcoding: 40% storage savings, no quality loss
-- Cloudflare Tunnel more reliable than dynamic DNS
-
-### What I'd Do Differently
-- Start with Caddy (skip Traefik migration)
-- ECC RAM from day one (future build)
-- Proper VLAN segmentation for IoT
-- More modular UPS for easier expansion
-
-### Key Takeaways
-- **Backups are not optional** - Test restores quarterly
-- **Documentation saves hours** - Future you is grateful
-- **KISS principle** - Complexity kills reliability
-- **WAF is real** - Family usability = success metric
+| Metric | Value |
+|--------|-------|
+| **Total Storage** | ~13TB usable |
+| **Docker Containers** | 40+ |
+| **Uptime Target** | 99.9% |
+| **Power Usage** | ~150W average |
+| **Family Photos** | 500GB+ (migrated from Google Photos) |
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **TrueNAS Community** - Excellent documentation
-- **r/selfhosted** - Inspiration and troubleshooting
+- **TrueNAS Community** - Documentation & support
+- **r/selfhosted** - Inspiration & troubleshooting
 - **LinuxServer.io** - Quality Docker images
-- **Caddy Team** - Powerful, simple reverse proxy
+- **Caddy Team** - Simple, powerful reverse proxy
 
 ---
 
-**Last Updated:** January 2026  
-**TrueNAS Version:** Dragonfish 24.10  
-**Storage:** ~13TB usable  
-**Services:** 40+ Docker containers  
-**Uptime Target:** 99.9%
+<p align="center">
+  <b>Last Updated:</b> February 2026 | 
+  <b>TrueNAS:</b> Dragonfish 24.10 | 
+  <b>Total Services:</b> 40+
+</p>
 
-*Built with ❤️ for digital sovereignty and family convenience.*
+<p align="center">
+  <i>Built with ❤️ for digital sovereignty and family convenience</i>
+</p>
