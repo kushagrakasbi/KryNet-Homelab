@@ -11,15 +11,8 @@
 | Document | Description | Last Updated |
 |----------|-------------|--------------|
 | [**README.md**](../README.md) | Project overview and architecture | Feb 2026 |
-| [**AGNI-SERVER.md**](AGNI-SERVER.md) | 🔥 Network Core documentation | Feb 2026 |
-| [**PRIME-SERVER.md**](PRIME-SERVER.md) | 🌟 Storage Hub documentation | Feb 2026 |
-
-### Technical Deep Dives
-
-| Document | Description | Lines |
-|----------|-------------|-------|
-| [**networking.md**](networking.md) | Complete networking architecture | 1135 |
-| [**services.md**](services.md) | Service configuration guide | 1027 |
+| [**AGNI-SERVER.md**](AGNI-SERVER.md) | 🔥 Network Core (SkullSaints Mini PC) | Feb 2026 |
+| [**PRIME-SERVER.md**](PRIME-SERVER.md) | 🌟 Storage Hub (TrueNAS SCALE) | Feb 2026 |
 
 ### Quick References
 
@@ -34,18 +27,9 @@
 ```
 docs/
 ├── INDEX.md                    # This file
-├── AGNI-SERVER.md             # 🔥 Network core docs
-├── PRIME-SERVER.md            # 🌟 Storage hub docs  
-├── NETWORKING-QUICKREF.md     # Quick networking reference
-├── networking.md              # Deep dive: networking
-├── services.md                # Deep dive: services
-└── agni/                      # Legacy Agni documentation
-    ├── INDEX.md
-    ├── ARCHITECTURE.md
-    ├── BACKUP-STRATEGY.md
-    ├── MIGRATION.md
-    ├── RESILIENCE-PLAN.md
-    └── ...
+├── AGNI-SERVER.md             # 🔥 Network core docs (Mini PC, Primary DNS)
+├── PRIME-SERVER.md            # 🌟 Storage hub docs (TrueNAS, ZFS)
+└── NETWORKING-QUICKREF.md     # Quick networking reference
 ```
 
 ---
@@ -65,24 +49,29 @@ docs/
 | Topic | Document | Section |
 |-------|----------|---------|
 | Caddy reverse proxy | [AGNI-SERVER.md](AGNI-SERVER.md) | Network Stack |
-| Cloudflare Tunnel | [networking.md](networking.md) | Cloudflare Tunnel Deep Dive |
-| Split-horizon DNS | [networking.md](networking.md) | Split-Horizon DNS Architecture |
-| Tailscale VPN | [networking.md](networking.md) | Tailscale Mesh VPN |
+| Cloudflare Tunnel | [AGNI-SERVER.md](AGNI-SERVER.md) | Network Stack |
+| Split-horizon DNS | [AGNI-SERVER.md](AGNI-SERVER.md) | AdGuard Home (Primary DNS) |
+| AdGuard Home Sync | [AGNI-SERVER.md](AGNI-SERVER.md) | AdGuard Home (Primary DNS) |
+| Tailscale VPN | [AGNI-SERVER.md](AGNI-SERVER.md) | Tailscale VPN |
 | ZFS storage | [PRIME-SERVER.md](PRIME-SERVER.md) | Storage Architecture |
+| ZFS scrubs & snapshots | [PRIME-SERVER.md](PRIME-SERVER.md) | Data Integrity & Maintenance |
+| SMART tests | [PRIME-SERVER.md](PRIME-SERVER.md) | Data Integrity & Maintenance |
 | Media stack (*arr) | [PRIME-SERVER.md](PRIME-SERVER.md) | Media Automation Stack |
 | Immich photos | [PRIME-SERVER.md](PRIME-SERVER.md) | Photo Management |
+| Audiobookshelf | [PRIME-SERVER.md](PRIME-SERVER.md) | Audiobookshelf |
 | Monitoring | [AGNI-SERVER.md](AGNI-SERVER.md) | Monitoring Stack |
-| Backups | Both server docs | Backup Configuration |
+| Backups (RClone) | Both server docs | Backup Configuration |
 
 ### By Task
 
 | Task | Document | Section |
 |------|----------|---------|
-| Add new service | [networking.md](networking.md) | Caddy configuration |
+| Add new service | [AGNI-SERVER.md](AGNI-SERVER.md) | Caddy configuration |
 | Troubleshoot DNS | [NETWORKING-QUICKREF.md](NETWORKING-QUICKREF.md) | Troubleshooting |
 | Check service status | [AGNI-SERVER.md](AGNI-SERVER.md) | Maintenance |
 | Restore from backup | Server docs | Backup Configuration |
 | View container logs | [NETWORKING-QUICKREF.md](NETWORKING-QUICKREF.md) | Common Operations |
+| Check ZFS health | [PRIME-SERVER.md](PRIME-SERVER.md) | ZFS Commands |
 
 ---
 
@@ -95,24 +84,17 @@ docs/
 | [stacks/agni/](../stacks/agni) | Agni Docker Compose files |
 | [stacks/prime/](../stacks/prime) | Prime Docker Compose files |
 
-### Configuration Files
-
-| Location | Contents |
-|----------|----------|
-| [config/caddy/](../config/caddy) | Caddyfile |
-| [config/homepage/](../config/homepage) | Homepage dashboard config |
-
 ---
 
 ## 📆 Document History
 
 | Date | Change |
 |------|--------|
+| Feb 2026 | Updated all docs: corrected hardware specs, storage pools, AdGuard DNS roles, added data integrity details |
 | Feb 2026 | Created AGNI-SERVER.md, PRIME-SERVER.md, consolidated README.md |
-| Jan 2026 | Updated networking.md and services.md |
-| Jan 2025 | Initial documentation structure |
+| Jan 2026 | Initial documentation structure |
 
 ---
 
 **Maintained by:** Krynet Homelab  
-**Repository:** [home-server](https://github.com/yourusername/home-server)
+**Repository:** [KryNet-Homelab](https://github.com/kushagrakasbi/KryNet-Homelab)

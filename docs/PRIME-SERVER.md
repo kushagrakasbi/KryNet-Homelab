@@ -2,7 +2,7 @@
 
 **KryNet Storage & Media Hub | TrueNAS SCALE | 192.168.1.100**
 
-Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storage server, media processing center, photo management hub, and data archive.
+Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storage server, media processing center, photo management hub, and data archive. It hosts both ZFS pools (andromeda and orion) and runs all storage-intensive workloads.
 
 ---
 
@@ -11,13 +11,15 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 1. [Server Overview](#server-overview)
 2. [Hardware Specifications](#hardware-specifications)
 3. [Storage Architecture (ZFS)](#storage-architecture-zfs)
-4. [Service Architecture](#service-architecture)
-5. [Media Automation Stack](#media-automation-stack)
-6. [Photo Management (Immich)](#photo-management-immich)
-7. [Monitoring Sensors](#monitoring-sensors)
-8. [Backup Configuration](#backup-configuration)
-9. [Network Configuration](#network-configuration)
-10. [Maintenance & Operations](#maintenance--operations)
+4. [Data Integrity & Maintenance](#data-integrity--maintenance)
+5. [Service Architecture](#service-architecture)
+6. [Media Automation Stack](#media-automation-stack)
+7. [Photo Management (Immich)](#photo-management-immich)
+8. [Audiobookshelf](#audiobookshelf)
+9. [Monitoring Sensors](#monitoring-sensors)
+10. [Backup Configuration](#backup-configuration)
+11. [Network Configuration](#network-configuration)
+12. [Maintenance & Operations](#maintenance--operations)
 
 ---
 
@@ -34,19 +36,27 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │   │   ZFS Pools     │  │  Media Stack    │  │  Photo Stack    │ │
 │   │                 │  │                 │  │                 │ │
-│   │ • orion (4TB)   │  │ • Jellyfin      │  │ • Immich        │ │
-│   │ • comet (1TB)   │  │ • *Arr Suite    │  │ • ML Processing │ │
-│   │ • andromeda     │  │ • Tdarr         │  │ • Facial Recog  │ │
-│   │   (8TB)         │  │ • Downloads     │  │                 │ │
+│   │ • andromeda     │  │ • Jellyfin      │  │ • Immich        │ │
+│   │   (2×4TB,Mirror)│  │ • *Arr Suite    │  │ • ML Processing │ │
+│   │ • orion         │  │ • Tdarr         │  │ • Facial Recog  │ │
+│   │   (2×2TB,Mirror)│  │ • Downloads     │  │                 │ │
 │   └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 │                                                                  │
 │   ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │   │   DNS Stack     │  │   Monitoring    │  │    Backup       │ │
 │   │                 │  │                 │  │                 │ │
 │   │ • AdGuard Home  │  │ • Node Exporter │  │ • Rclone        │ │
-│   │   (Primary)     │  │ • cAdvisor      │  │ • pCloud Sync   │ │
+│   │   (Secondary)   │  │ • cAdvisor      │  │ • pCloud Sync   │ │
 │   │                 │  │ • Docker Proxy  │  │                 │ │
 │   └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                  │
+│   ┌─────────────────┐                                            │
+│   │  Audio Stack    │                                            │
+│   │                 │                                            │
+│   │ • Audiobookshelf│                                            │
+│   │  (Podcasts +    │                                            │
+│   │   Audiobooks)   │                                            │
+│   └─────────────────┘                                            │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -55,10 +65,11 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 
 | Function | Description |
 |----------|-------------|
-| **Storage Hub** | 13TB+ ZFS storage with data integrity |
-| **Media Server** | 4K streaming with hardware transcoding |
-| **Photo Backup** | Google Photos replacement with ML features |
-| **DNS Primary** | Main AdGuard Home instance |
+| **Storage Hub** | 12TB raw ZFS storage (mirrored) across 2 pools |
+| **Media Server** | Streaming with hardware transcoding (GTX 1060) |
+| **Photo Backup** | Google Photos replacement with ML features (Immich) |
+| **Audio Library** | Podcasts & audiobooks via Audiobookshelf |
+| **DNS Secondary** | Backup AdGuard Home instance (synced from Agni) |
 | **Download Server** | VPN-protected torrent/usenet |
 | **Transcode Engine** | GPU-powered H.265 conversion |
 
@@ -68,12 +79,12 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 
 | Component | Specification |
 |-----------|---------------|
-| **Chassis** | Fractal Design Node 804 (Dual-chamber, HDD cooling) |
-| **CPU** | Intel i5-7600K (4C/4T @ 3.8GHz) |
-| **RAM** | 32GB Crucial DDR4 (ZFS ARC + containers + ML) |
-| **GPU** | NVIDIA GTX 1060 6GB (NVENC + Immich ML) |
+| **Chassis** | Old MSI Cabinet (repurposed) |
+| **CPU** | Intel Core i3-10th Gen F Series |
+| **RAM** | 32GB DDR4 @ 2400 MHz (ZFS ARC + containers + ML) |
+| **GPU** | NVIDIA GTX 1060 3GB (NVENC transcoding + Immich ML) |
 | **OS** | TrueNAS SCALE (Dragonfish 24.10) |
-| **Network** | 1Gbps Ethernet (Intel I219-V) |
+| **Network** | 1Gbps Ethernet |
 | **IP Address** | 192.168.1.100 (Static) |
 | **Web UI** | https://server.example.com or port 88 |
 
@@ -83,80 +94,106 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 
 ### Storage Pools
 
-| Pool | Hardware | Type | Capacity | Purpose |
-|------|----------|------|----------|---------|
-| **orion** | 2x 4TB WD Red Plus | Mirror | ~4TB | App configs, databases |
-| **comet** | 2x 1TB NVMe SSD | Mirror | ~1TB | Downloads, transcode cache |
-| **andromeda** | 1x 8TB Seagate IronWolf | Single | 8TB | Media, photos, documents |
+Both ZFS pools reside on Prime and are configured in **mirror** mode for redundancy.
+
+| Pool | Hardware | Type | Raw Capacity | Usable Capacity | Purpose |
+|------|----------|------|-------------|-----------------|---------|
+| **andromeda** | 2× 4TB WD Red Plus | Mirror | 8TB | ~4TB | Immich photos/videos, podcasts, audiobooks |
+| **orion** | 2× 2TB WD Blue HDD | Mirror | 4TB | ~2TB | App configs, databases, media library |
 
 ### Dataset Structure
 
 ```
 /mnt/orion/
-├── apps-config/              # All Docker container configs
-│   ├── adguardhome/
-│   ├── jellyfin/
-│   ├── jellyseerr/
-│   ├── sonarr/
-│   ├── radarr/
-│   ├── prowlarr/
-│   ├── bazarr/
-│   ├── qbittorrent/
-│   ├── sabnzbd/
-│   ├── tdarr/
-│   ├── gluetun/
-│   ├── homarr/
-│   ├── tailscale/
-│   ├── rclone/
+├── apps-config/               # All Docker container configurations
+│   ├── adguardhome/           # AdGuard Home (Secondary DNS)
+│   ├── jellyfin/              # Media server config
+│   ├── jellyseerr/            # Request interface config
+│   ├── sonarr/                # TV automation config
+│   ├── radarr/                # Movie automation config
+│   ├── prowlarr/              # Indexer manager config
+│   ├── bazarr/                # Subtitle manager config
+│   ├── qbittorrent/           # Torrent client config
+│   ├── sabnzbd/               # Usenet client config
+│   ├── tdarr/                 # Transcode engine config
+│   ├── gluetun/               # VPN gateway config
+│   ├── homarr/                # Dashboard config
+│   ├── tailscale/             # VPN state
+│   ├── rclone/                # Cloud backup config
+│   ├── audiobookshelf/        # Audiobook server config
 │   └── ... (30+ services)
 │
-/mnt/comet/
-├── downloads/                # Active downloads
-│   ├── torrents/
-│   │   ├── tv/
-│   │   ├── movies/
-│   │   └── incomplete/
-│   └── usenet/
-│       ├── complete/
-│       └── incomplete/
-└── tdarr-cache/              # Transcode temporary files
+└── data/
+    └── media/                 # Media pipeline library
+        ├── movies/            # Movie files (managed by Radarr)
+        ├── series/            # TV series (managed by Sonarr)
+        ├── anime/             # Anime series
+        └── documentaries/     # Documentary collection
 
 /mnt/andromeda/
 ├── apps/
-│   └── immich/               # Photo management
-│       ├── uploads/          # Original photos (500GB+)
-│       ├── ml/               # ML model cache
-│       └── db/               # PostgreSQL data
-├── data/
-│   └── media/                # Organized media library
-│       ├── movies/
-│       ├── series/
-│       ├── anime/
-│       ├── documentaries/
-│       ├── audiobooks/
-│       └── podcasts/
-└── share/                    # General file sharing
+│   └── immich/                # Photo management platform
+│       ├── uploads/           # Original photos & videos (500GB+)
+│       │   ├── library/       # Per-user photo libraries
+│       │   │   └── admin/     # Admin user
+│       │   │       └── 2024/  # Organized by year
+│       │   │           └── 01/ # By month
+│       │   ├── thumbs/        # Generated thumbnails
+│       │   └── encoded-video/ # Transcoded videos
+│       ├── ml/                # ML model cache (~10GB)
+│       │   ├── facial-recognition/
+│       │   └── clip/          # CLIP model for smart search
+│       └── db/                # PostgreSQL data (~5GB)
+│
+└── media/
+    ├── podcasts/              # Podcast library (served by Audiobookshelf)
+    └── audiobooks/            # Audiobook library (served by Audiobookshelf)
 ```
 
 ### ZFS Configuration
 
-**Snapshot Strategy:**
-| Pool | Frequency | Retention | Purpose |
-|------|-----------|-----------|---------|
-| orion | Every 6 hours | 48 hours | Config protection |
-| comet | Daily | 7 days | Download protection |
-| andromeda | Weekly | 4 weeks | Media protection |
-
-**Data Integrity:**
-- Checksums on every read
-- Self-healing from mirror copies
-- Weekly scrubs (Sundays 02:00 AM)
-- SMART tests: Long monthly, short weekly
-
 **Performance Tuning:**
-- ARC: ~20GB RAM allocated
+- ARC: ~20GB RAM allocated (from 32GB total)
 - Compression: LZ4 (~15% savings)
 - Recordsize: 128K (databases), 1M (media)
+
+---
+
+## 🔍 Data Integrity & Maintenance
+
+### ZFS Scrub Schedule
+
+Scrubs are configured in TrueNAS to run weekly on both pools, verifying every data block against its checksum and repairing any corruption from mirror copies.
+
+| Pool | Day | Time | Frequency |
+|------|-----|------|-----------|
+| **orion** | Sunday | 23:00 | Weekly |
+| **andromeda** | Sunday | 23:00 | Weekly |
+
+### ZFS Snapshot Strategy
+
+Periodic snapshots are configured for `orion/apps-config` to protect all Docker container configuration data. Two snapshot tasks are set up:
+
+| Task | Frequency | Schedule | Retention | Purpose |
+|------|-----------|----------|-----------|---------|
+| Hourly snapshots | Every hour | Each day | 3 days | Quick rollback for config issues |
+| Daily snapshots | Daily | 12:00 AM | 2 weeks | Longer-term config protection |
+
+> **Note:** Snapshots are currently only configured for `orion/apps-config` as it contains all critical container configurations. Immich data on andromeda is protected through mirroring + cloud backups.
+
+### SMART Disk Health Tests
+
+Automated SMART tests are configured in TrueNAS for early detection of disk failures:
+
+| Test Type | Pool/Disks | Schedule | Time |
+|-----------|-----------|----------|------|
+| **Long Test** | Orion (2× 2TB WD Blue) | 1st day of every month | 04:00 AM |
+| **Long Test** | Andromeda (2× 4TB WD Red Plus) | 1st day of every month | 03:00 AM |
+| **Short Test** | All disks (Orion + Andromeda) | Weekly | 12:00 AM |
+
+**What these tests do:**
+- **Short test:** Quick ~2 minute scan checking electrical/mechanical health, read/write performance, and SMART attributes
+- **Long test:** Full surface scan of every sector on the disk, typically takes several hours. Catches developing bad sectors before data loss occurs
 
 ---
 
@@ -170,8 +207,8 @@ PUID=568
 PGID=568
 TZ=Asia/Kolkata
 DOCKER_CONFIG_PATH=/mnt/orion/apps-config
-DOCKER_DATA_PATH=/mnt/andromeda/data
-DOCKER_TRANSCODE_CACHE=/mnt/comet/tdarr-cache
+DOCKER_DATA_PATH=/mnt/orion/data
+DOCKER_ANDROMEDA_PATH=/mnt/andromeda
 
 # VPN Configuration
 WIREGUARD_PRIVATE_KEY=your_key
@@ -201,7 +238,7 @@ SPEEDTEST_APP_KEY=base64:...
 |------------|----------|
 | `media-stack.yml` | Gluetun, qBittorrent, SABnzbd, FlareSolverr, Prowlarr, Sonarr, Radarr, Bazarr, Jellyfin, Jellyseerr, Whisparr, Tdarr |
 | `immich.yml` | Immich Server, ML, Redis, PostgreSQL, Power Tools |
-| `dns-stack.yml` | AdGuard Home (Primary) |
+| `dns-stack.yml` | AdGuard Home (Secondary) |
 | `monitoring-sensors.yml` | Dozzle, Node Exporter, cAdvisor, Docker Socket Proxy, Portainer Agent |
 | `audiobookshelf.yml` | Audiobookshelf |
 | `speedtest.yml` | OpenSpeedTest, Speedtest Tracker |
@@ -257,6 +294,8 @@ SPEEDTEST_APP_KEY=base64:...
                 │  (Stream)   │
                 └─────────────┘
 ```
+
+**Media files** are stored on `orion` pool at `/mnt/orion/data/media/` and organized into folders for movies, series, anime, and documentaries.
 
 ### Service Details
 
@@ -340,8 +379,8 @@ Usenet downloading:
 **Access:** `https://tdarr.example.com` (Admin only)
 
 H.265/HEVC conversion:
-- 40% space savings
-- GPU-accelerated (GTX 1060 NVENC)
+- ~40% space savings
+- GPU-accelerated (GTX 1060 3GB NVENC)
 - Quality: CRF 23 (visually lossless)
 - Speed: 2-3x realtime
 
@@ -350,7 +389,7 @@ H.265/HEVC conversion:
 **Access:** `https://media.example.com`
 
 Streaming platform:
-- Hardware transcoding (Intel QSV + NVIDIA)
+- Hardware transcoding (NVIDIA GTX 1060)
 - Multi-user support
 - Mobile apps available
 - External access via Cloudflare
@@ -385,7 +424,9 @@ Streaming platform:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Storage Structure
+### Storage
+
+All Immich data is stored on the **andromeda** pool at `/mnt/andromeda/apps/immich/`:
 
 ```
 /mnt/andromeda/apps/immich/
@@ -432,6 +473,26 @@ environment:
 | `https://photos.example.com` | Public access (OAuth) |
 | `https://photos.internal.home` | LAN access |
 | `https://ipt.example.com` | Power Tools (bulk edits) |
+
+---
+
+## 🎧 Audiobookshelf
+
+**Port:** 13378  
+**Access:** `https://audiobooks.example.com`
+
+Audiobookshelf serves podcasts and audiobooks stored on the **andromeda** pool:
+
+| Content Type | Storage Path |
+|-------------|--------------|
+| Podcasts | `/mnt/andromeda/media/podcasts/` |
+| Audiobooks | `/mnt/andromeda/media/audiobooks/` |
+
+Features:
+- Progress tracking across devices
+- Chapter navigation
+- Sleep timer
+- Podcast auto-download
 
 ---
 
@@ -484,15 +545,14 @@ Real-time log streaming for Prime containers.
 
 ### Rclone to pCloud
 
-**Schedule:** Every 12 hours  
 **Healthcheck:** `hc.example.com` ping on completion
 
 **Backup Targets:**
 
 | Source | Destination | Purpose |
 |--------|-------------|---------|
-| `/mnt/orion/apps-config` | `pcloud:Backups/Krynet-Prime/Configs` | All container configs |
-| `/mnt/andromeda/apps` | `pcloud:Backups/Krynet-Prime/Apps` | App data (excluding media) |
+| `/mnt/orion/apps-config` | `pcloud:Backups/Krynet-Prime/Configs` | All Docker container configs |
+| Immich DB backup (from andromeda) | `pcloud:Backups/Krynet-Prime/ImmichDB` | Immich PostgreSQL database backup |
 
 **Exclusions:**
 - Git directories
@@ -507,14 +567,18 @@ Real-time log streaming for Prime containers.
 
 ## 🌐 Network Configuration
 
-### AdGuard Home (Primary DNS)
+### AdGuard Home (Secondary DNS)
+
+> **Note:** The **primary** AdGuard Home instance runs on Agni (192.168.1.200). This is the **secondary** instance, kept in sync via AdGuard Home Sync running on Agni.
+
 **Port:** 53 (DNS), 7000 (Web UI)  
 **Access:** `https://adguard.example.com`
 
-Primary DNS server with:
-- Split-horizon DNS rewrites
+Secondary DNS server with:
+- Split-horizon DNS rewrites (synced from Agni)
 - Ad blocking (OISD Big List)
 - Query logging
+- Automatic config sync from primary (Agni) via AdGuard Home Sync
 
 ### Tailscale VPN
 **Network Mode:** Host  
@@ -565,17 +629,20 @@ docker exec gluetun wget -qO- ifconfig.me
 # Check pool health
 zpool status -v
 
-# Check snapshots
-zfs list -t snapshot
+# Check snapshots (orion/apps-config)
+zfs list -t snapshot -r orion/apps-config
 
 # Create manual snapshot
-zfs snapshot andromeda/apps@manual-backup-$(date +%Y%m%d)
+zfs snapshot orion/apps-config@manual-$(date +%Y%m%d-%H%M)
 
 # Check scrub status
 zpool status | grep scrub
 
 # Check disk usage
 zfs list
+
+# Check SMART status for a disk
+smartctl -a /dev/sdX
 ```
 
 ### Service-Specific
@@ -592,6 +659,9 @@ docker exec -it qbittorrent curl ifconfig.me
 
 # Tdarr: Check node status
 docker logs tdarr-node --tail 20
+
+# Audiobookshelf: Check logs
+docker logs audiobookshelf --tail 20
 ```
 
 ### Troubleshooting
@@ -605,7 +675,7 @@ docker logs jellyfin | grep -i transcode
 docker exec jellyfin nvidia-smi
 
 # Check file permissions
-ls -la /mnt/andromeda/data/media/movies/
+ls -la /mnt/orion/data/media/movies/
 ```
 
 #### Downloads Not Starting
@@ -638,7 +708,7 @@ docker exec immich_postgres pg_isready
 
 | Port | Service | Protocol |
 |------|---------|----------|
-| 53 | AdGuard DNS | TCP/UDP |
+| 53 | AdGuard DNS (Secondary) | TCP/UDP |
 | 88 | TrueNAS Web UI | TCP |
 | 2283 | Immich | TCP |
 | 2375 | Docker Socket Proxy | TCP |
@@ -673,6 +743,6 @@ docker exec immich_postgres pg_isready
 **Last Updated:** February 2026  
 **Server IP:** 192.168.1.100  
 **OS:** TrueNAS SCALE Dragonfish 24.10  
-**Storage:** ~13TB (ZFS)  
+**Storage:** ~6TB usable (12TB raw, ZFS mirror)  
 **Services:** 25+ containers  
 **Role:** Storage Hub + Media Center

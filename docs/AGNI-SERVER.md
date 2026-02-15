@@ -2,7 +2,7 @@
 
 **KryNet Network Core | Ubuntu Server | 192.168.1.200**
 
-Agni serves as the **network backbone** of the KryNet Homelab, handling all traffic routing, DNS resolution, VPN connectivity, monitoring, and home automation.
+Agni serves as the **network backbone** of the KryNet Homelab, handling all traffic routing, DNS resolution (primary), VPN connectivity, monitoring, and home automation. It is a SkullSaints Agni Mini PC running Ubuntu Server 24.04 LTS.
 
 ---
 
@@ -36,11 +36,12 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
                  │ Encrypted Tunnel
     ╔════════════▼════════════╗
     ║     🔥 AGNI SERVER      ║
-    ║    (Network Core)       ║
+    ║  (Network Core - Mini PC)║
     ║                         ║
     ║  • Caddy Reverse Proxy  ║
     ║  • Cloudflared Tunnel   ║
-    ║  • AdGuard DNS          ║
+    ║  • AdGuard DNS (Primary)║
+    ║  • AdGuard Home Sync    ║
     ║  • Tailscale VPN        ║
     ║  • Monitoring Hub       ║
     ╚═══════════╦═════════════╝
@@ -62,9 +63,9 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
 **Problem Solved:** Single point of failure if Prime goes down for maintenance.
 
 | Scenario | Without Agni | With Agni |
-|----------|--------------|-----------|
+|----------|--------------|-----------| 
 | Prime reboot | All services offline | DNS + VPN + Monitoring continues |
-| DNS resolution | Fails completely | Secondary DNS available |
+| DNS resolution | Fails completely | Primary DNS on Agni remains active |
 | External access | Tunnel offline | Tunnel remains active |
 | Alerting | No notifications | Gotify sends alerts |
 
@@ -74,16 +75,14 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
 
 | Component | Specification |
 |-----------|---------------|
-| **Device** | Ubuntu Server Laptop (Repurposed) |
+| **Device** | SkullSaints Agni Mini PC |
 | **OS** | Ubuntu Server 24.04 LTS |
-| **RAM** | 16GB DDR4 |
+| **RAM** | 16GB DDR5 |
 | **Storage** | 512GB NVMe SSD |
 | **Network** | 1Gbps Ethernet |
 | **IP Address** | 192.168.1.200 (Static) |
-| **Power Draw** | ~20W (clamshell mode, display off) |
+| **Power Draw** | ~20W |
 | **Location** | Near router for network reliability |
-
-> **Planned Upgrade:** SkullSaints Agni Mini-PC (Intel N150, 16GB RAM, built-in LCD) for lower power consumption and better form factor.
 
 ---
 
@@ -91,7 +90,7 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
 
 ### Docker Configuration
 
-**Base Path:** `/path/to/docker/`  
+**Base Path:** `/home/agni/apps/docker/`  
 **Network:** `agni_net` (external Docker network)  
 **Environment:** `stack.env` with variables
 
@@ -101,7 +100,7 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
 |------------|----------|---------|
 | `caddy-stack.yml` | Caddy | Reverse proxy with Cloudflare DNS |
 | `cloudflared-stack.yml` | cloudflared | Cloudflare tunnel connector |
-| `adguard-stack.yml` | AdGuard Home, AdGuard Sync | DNS resolution + ad blocking |
+| `adguard-stack.yml` | AdGuard Home, AdGuard Home Sync | Primary DNS + ad blocking + config sync to Prime |
 | `tailscale.yml` | Tailscale | Mesh VPN with subnet routing |
 | `monitoring-stack.yml` | Prometheus, Grafana, Gotify, Gatus, Healthchecks, Node-exporter, cAdvisor, Dozzle | Full monitoring suite |
 | `homeassistant.yml` | Home Assistant | Smart home automation |
@@ -120,7 +119,7 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
 **Network Mode:** Host  
 **Port:** 80, 443 (HTTP/HTTPS)
 
-**Caddyfile Location:** `/path/to/docker/caddy/Caddyfile`
+**Caddyfile Location:** `/home/agni/apps/docker/caddy/Caddyfile`
 
 **Domains Served:**
 - `*.example.com` - Public access via Cloudflare Tunnel
@@ -137,8 +136,8 @@ Agni serves as the **network backbone** of the KryNet Homelab, handling all traf
 | `hc.example.com` | Healthchecks | 8000 |
 | `prom.example.com` | Prometheus | 9090 |
 | `ha.example.com` | Home Assistant | 8123 |
-| `adguard2.example.com` | AdGuard Home (Agni) | 7000 |
-| `adsync.example.com` | AdGuard Sync | 8082 |
+| `adguard2.example.com` | AdGuard Home (Agni - Primary) | 7000 |
+| `adsync.example.com` | AdGuard Home Sync | 8082 |
 | `portainer2.example.com` | Portainer (Agni) | 9443 |
 | `logs2.example.com` | Dozzle Logs | 8088 |
 | `ospt2.example.com` | OpenSpeedTest | 8092 |
@@ -176,10 +175,12 @@ services:
 
 ---
 
-### AdGuard Home (Secondary DNS)
+### AdGuard Home (Primary DNS)
 
-**Primary:** Prime (192.168.1.100)  
-**Secondary:** Agni (192.168.1.200) ← This instance
+> **This is the primary DNS server for the entire network.** AdGuard Home Sync also runs on Agni and synchronizes configuration to the secondary instance on Prime (192.168.1.100).
+
+**Primary:** Agni (192.168.1.200) ← This instance  
+**Secondary:** Prime (192.168.1.100)
 
 **Ports:**
 | Port | Protocol | Purpose |
@@ -196,15 +197,17 @@ All `*.example.com` and `*.internal.home` domains rewrite to local IPs when on L
 
 **AdGuard Home Sync:**
 ```yaml
-# Syncs configuration from Prime every 5 minutes
+# Syncs configuration FROM Agni (primary) TO Prime (secondary)
 services:
   adguardhome-sync:
     image: lscr.io/linuxserver/adguardhome-sync:latest
     ports:
       - "8082:8080"
     volumes:
-      - /path/to/docker/adguard-sync:/config
+      - /home/agni/apps/docker/adguard-sync:/config
 ```
+
+The sync service ensures that DNS rewrites, filtering rules, and upstream DNS settings are consistent between both AdGuard instances. If Agni goes down, Prime's secondary DNS continues serving cached configuration.
 
 ---
 
@@ -224,7 +227,7 @@ services:
       - NET_ADMIN
       - NET_RAW
     volumes:
-      - /path/to/docker/tailscale:/var/lib/tailscale
+      - /home/agni/apps/docker/tailscale:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -326,6 +329,7 @@ Monitors scheduled tasks:
 - Backup jobs ping on completion
 - If no ping received, alert triggered
 - Prevents silent failures
+- Monitors RClone backup jobs from both Agni and Prime
 
 #### Dozzle (Log Viewer)
 **Port:** 8088  
@@ -369,12 +373,13 @@ services:
 
 ### Rclone to pCloud
 
-**Schedule:** Every 12 hours  
 **Target:** `pcloud:Backups/Krynet-Agni`  
 **Healthcheck:** Pings `hc.example.com` on success/failure
 
 **What's Backed Up:**
-- All Docker container configs (`/path/to/docker/`)
+- All Docker container configs (`/home/agni/apps/docker/`)
+
+This includes configs for Caddy, AdGuard Home, AdGuard Home Sync, Grafana, Prometheus, Home Assistant, Gatus, Gotify, Healthchecks, and all other services running on Agni.
 
 **Exclusions:**
 - Git directories
@@ -403,9 +408,9 @@ docker exec backup-agni rclone sync /data pcloud:Backups/Krynet-Agni --verbose
         ├── stack.env               # Stack-specific env
         ├── adguard/
         │   ├── work/               # Runtime data
-        │   └── conf/               # Configuration
+        │   └── conf/               # Configuration (PRIMARY DNS)
         ├── adguard-sync/
-        │   └── adguardhome-sync.yaml
+        │   └── adguardhome-sync.yaml  # Sync config (Agni→Prime)
         ├── caddy/
         │   ├── Caddyfile           # Reverse proxy config
         │   ├── data/               # Certificates
@@ -485,8 +490,8 @@ docker logs -f adguardhome
 docker restart caddy
 
 # Update all containers
-docker compose -f /path/to/docker/[stack].yml pull
-docker compose -f /path/to/docker/[stack].yml up -d
+docker compose -f /home/agni/apps/docker/[stack].yml pull
+docker compose -f /home/agni/apps/docker/[stack].yml up -d
 
 # Check Tailscale status
 docker exec tailscale-agni tailscale status
@@ -510,10 +515,12 @@ docker restart cloudflared
 
 #### DNS Not Resolving
 ```bash
-# Check AdGuard is running
+# Check AdGuard is running (this is the PRIMARY DNS)
 docker ps | grep adguard
 # Check upstream DNS in AdGuard UI
 # Verify DNS rewrites are configured
+# Check AdGuard Sync is running and syncing to Prime
+docker logs adguardhome-sync --tail 20
 ```
 
 #### Services Unreachable
@@ -553,7 +560,7 @@ docker exec backup-agni rclone ls pcloud:Backups/Krynet-Agni --max-depth 1
 
 | Port | Service | Protocol |
 |------|---------|----------|
-| 53 | AdGuard DNS | TCP/UDP |
+| 53 | AdGuard DNS (Primary) | TCP/UDP |
 | 80 | Caddy HTTP | TCP |
 | 443 | Caddy HTTPS | TCP |
 | 854 | AdGuard DoT | TCP |
@@ -565,7 +572,7 @@ docker exec backup-agni rclone ls pcloud:Backups/Krynet-Agni --max-depth 1
 | 7000 | AdGuard Web UI | TCP |
 | 7001 | AdGuard Setup | TCP |
 | 8000 | Healthchecks | TCP |
-| 8082 | AdGuard Sync | TCP |
+| 8082 | AdGuard Home Sync | TCP |
 | 8087 | cAdvisor | TCP |
 | 8088 | Dozzle | TCP |
 | 8089 | Gotify | TCP |
@@ -583,5 +590,6 @@ docker exec backup-agni rclone ls pcloud:Backups/Krynet-Agni --max-depth 1
 **Last Updated:** February 2026  
 **Server IP:** 192.168.1.200  
 **Hostname:** network-server  
+**Device:** SkullSaints Agni Mini PC  
 **Services:** 15+ containers  
-**Role:** Network Core + Monitoring Hub
+**Role:** Network Core + Monitoring Hub + Primary DNS

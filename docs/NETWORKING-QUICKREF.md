@@ -23,18 +23,21 @@
               ╔══════════════▼══════════════╗
               ║      🔥 AGNI SERVER         ║
               ║       192.168.1.200         ║
+              ║   (SkullSaints Mini PC)     ║
               ║                             ║
               ║   Caddy ↔ Cloudflared       ║
-              ║   AdGuard (Secondary)       ║
+              ║   AdGuard (Primary)         ║
+              ║   AdGuard Home Sync         ║
               ║   Tailscale                 ║
               ╚══════════════╦══════════════╝
                              ║
               ╔══════════════▼══════════════╗
               ║      🌟 PRIME SERVER        ║
               ║       192.168.1.100         ║
+              ║   (MSI Cabinet, TrueNAS)    ║
               ║                             ║
-              ║   AdGuard (Primary)         ║
-              ║   All Services              ║
+              ║   AdGuard (Secondary)       ║
+              ║   All Storage + Services    ║
               ╚═════════════════════════════╝
 ```
 
@@ -68,7 +71,7 @@
 
 | From | To | Path |
 |------|----|------|
-| Home LAN | Service | DNS → 192.168.1.100/200 → Caddy → Service |
+| Home LAN | Service | DNS → 192.168.1.200 (Agni primary) → Caddy → Service |
 | Remote (Public) | Service | Cloudflare → Tunnel → Agni → Caddy → Service |
 | Remote (VPN) | Service | Tailscale → P2P → Caddy → Service |
 | Service to Service | Backend | Docker network (kry_net) |
@@ -80,7 +83,10 @@
 ### Check DNS Resolution
 
 ```bash
-# From LAN (should return local IP)
+# From LAN — should return local IP (queries Agni primary DNS)
+nslookup photos.example.com 192.168.1.200
+
+# From LAN — should also work via Prime secondary DNS
 nslookup photos.example.com 192.168.1.100
 
 # From external (should return Cloudflare IP)
@@ -120,27 +126,29 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 ## 📊 Key Ports
 
-### Agni (192.168.1.200)
+### Agni (192.168.1.200) — Network Core
 
 | Port | Service |
 |------|---------|
-| 53 | AdGuard DNS |
+| 53 | AdGuard DNS (Primary) |
 | 80/443 | Caddy |
 | 3000 | Grafana |
 | 3001 | Gatus |
+| 8082 | AdGuard Home Sync |
 | 8123 | Home Assistant |
 | 9090 | Prometheus |
 
-### Prime (192.168.1.100)
+### Prime (192.168.1.100) — Storage Hub
 
 | Port | Service |
 |------|---------|
-| 53 | AdGuard DNS |
+| 53 | AdGuard DNS (Secondary) |
 | 88 | TrueNAS UI |
 | 2283 | Immich |
 | 8096 | Jellyfin |
 | 8989 | Sonarr |
 | 7878 | Radarr |
+| 13378 | Audiobookshelf |
 
 ---
 
@@ -149,7 +157,7 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ### Service Not Reachable
 
 1. **Check Caddy:** `docker logs caddy`
-2. **Check DNS:** `nslookup <domain> 192.168.1.200`
+2. **Check DNS:** `nslookup <domain> 192.168.1.200` (primary on Agni)
 3. **Check container:** `docker ps | grep <service>`
 
 ### Slow Tunnel Performance
@@ -160,9 +168,10 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 ### DNS Not Working
 
-1. Check AdGuard: `docker ps | grep adguard`
-2. Verify router DHCP DNS settings
-3. Check AdGuard Sync status
+1. Check AdGuard on Agni (primary): `docker ps | grep adguard`
+2. Check AdGuard on Prime (secondary): same command on Prime
+3. Verify router DHCP DNS settings point to Agni (192.168.1.200) and Prime (192.168.1.100)
+4. Check AdGuard Home Sync status on Agni: `docker logs adguardhome-sync --tail 20`
 
 ---
 
@@ -170,10 +179,11 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 | File | Path | Server |
 |------|------|--------|
-| Caddyfile | `/path/to/docker/caddy/Caddyfile` | Agni |
-| AdGuard Config | `/path/to/docker/adguard/conf/` | Agni |
-| AdGuard Config | `/mnt/orion/apps-config/adguardhome/conf/` | Prime |
-| Prometheus | `/path/to/docker/prometheus/config/` | Agni |
+| Caddyfile | `/home/agni/apps/docker/caddy/Caddyfile` | Agni |
+| AdGuard Config (Primary) | `/home/agni/apps/docker/adguard/conf/` | Agni |
+| AdGuard Sync Config | `/home/agni/apps/docker/adguard-sync/` | Agni |
+| AdGuard Config (Secondary) | `/mnt/orion/apps-config/adguardhome/conf/` | Prime |
+| Prometheus | `/home/agni/apps/docker/prometheus/config/` | Agni |
 
 ---
 
@@ -181,9 +191,8 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 | Document | Description |
 |----------|-------------|
-| [networking.md](networking.md) | Complete networking deep dive |
-| [AGNI-SERVER.md](AGNI-SERVER.md) | Agni server documentation |
-| [PRIME-SERVER.md](PRIME-SERVER.md) | Prime server documentation |
+| [AGNI-SERVER.md](AGNI-SERVER.md) | Agni server documentation (Network Core) |
+| [PRIME-SERVER.md](PRIME-SERVER.md) | Prime server documentation (Storage Hub) |
 
 ---
 

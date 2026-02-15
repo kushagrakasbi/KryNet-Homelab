@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/TrueNAS_SCALE-Dragonfish_24.10-0078D7?style=for-the-badge" alt="TrueNAS SCALE"/>
   <img src="https://img.shields.io/badge/Ubuntu-24.04_LTS-E95420?style=for-the-badge" alt="Ubuntu"/>
   <img src="https://img.shields.io/badge/Docker-40%2B_Containers-2496ED?style=for-the-badge" alt="Docker"/>
-  <img src="https://img.shields.io/badge/Storage-13TB_ZFS-green?style=for-the-badge" alt="Storage"/>
+  <img src="https://img.shields.io/badge/Storage-12TB_Raw_ZFS_(Mirror)-green?style=for-the-badge" alt="Storage"/>
 </p>
 
 A production-grade private cloud ecosystem serving a family of four. This repository documents the complete hardware, software, and networking architecture of a self-hosted infrastructure that rivals commercial cloud services while maintaining complete data sovereignty.
@@ -33,11 +33,12 @@ A production-grade private cloud ecosystem serving a family of four. This reposi
 5. [Networking Stack](#-networking-stack)
 6. [Service Ecosystem](#-service-ecosystem)
 7. [Security Implementation](#-security-implementation)
-8. [Backup & Resilience](#-backup--resilience)
-9. [Monitoring & Operations](#-monitoring--operations)
-10. [Getting Started](#-getting-started)
-11. [Directory Structure](#-directory-structure)
-12. [Future Roadmap](#-future-roadmap)
+8. [Data Integrity & Maintenance](#-data-integrity--maintenance)
+9. [Backup & Resilience](#-backup--resilience)
+10. [Monitoring & Operations](#-monitoring--operations)
+11. [Getting Started](#-getting-started)
+12. [Directory Structure](#-directory-structure)
+13. [Future Roadmap](#-future-roadmap)
 
 ---
 
@@ -76,11 +77,12 @@ This homelab operates under the **"Home Utility"** model — when the system is 
                                   │
                     ╔═════════════▼═════════════╗
                     ║     🔥 AGNI SERVER        ║
-                    ║     (Network Core)        ║
+                    ║  (Network Core - Mini PC) ║
                     ║                           ║
                     ║  • Caddy Reverse Proxy    ║
                     ║  • Cloudflared Tunnel     ║
-                    ║  • AdGuard DNS (Secondary)║
+                    ║  • AdGuard DNS (Primary)  ║
+                    ║  • AdGuard Home Sync      ║
                     ║  • Tailscale VPN          ║
                     ║  • Prometheus + Grafana   ║
                     ║  • Home Assistant         ║
@@ -91,10 +93,10 @@ This homelab operates under the **"Home Utility"** model — when the system is 
                     ║     (Storage Hub)         ║
                     ║                           ║
                     ║  • TrueNAS SCALE          ║
-                    ║  • 13TB ZFS Storage       ║
+                    ║  • 12TB Raw ZFS (Mirror)  ║
                     ║  • Jellyfin + *Arr Stack  ║
                     ║  • Immich Photos          ║
-                    ║  • AdGuard DNS (Primary)  ║
+                    ║  • AdGuard DNS (Secondary)║
                     ║  • GPU Transcoding        ║
                     ╚═══════════════════════════╝
 ```
@@ -106,50 +108,99 @@ This homelab operates under the **"Home Utility"** model — when the system is 
 ### Server Fleet
 
 | Server | Hardware | OS | Role |
-|--------|----------|----|----|
-| **🌟 Prime** | i5-7600K, 32GB RAM, GTX 1060 | TrueNAS SCALE | Storage Hub |
-| **🔥 Agni** | 16GB RAM, 512GB NVMe | Ubuntu 24.04 | Network Core |
+|--------|----------|----|------|
+| **🌟 Prime** | i3-10th Gen F, 32GB DDR4, GTX 1060 3GB | TrueNAS SCALE | Storage Hub |
+| **🔥 Agni** | SkullSaints Mini PC, 16GB DDR5, 512GB NVMe | Ubuntu 24.04 | Network Core |
 
 ### Prime Server Specs
 
 | Component | Specification |
 |-----------|---------------|
-| **Chassis** | Fractal Design Node 804 |
-| **CPU** | Intel i5-7600K (4C/4T @ 3.8GHz) |
-| **RAM** | 32GB DDR4 (ZFS ARC + ML workloads) |
-| **GPU** | NVIDIA GTX 1060 6GB (NVENC + Immich) |
-| **Storage** | 13TB+ across 3 ZFS pools |
+| **Chassis** | Old MSI Cabinet (repurposed) |
+| **CPU** | Intel Core i3-10th Gen F Series |
+| **RAM** | 32GB DDR4 @ 2400 MHz (ZFS ARC + containers) |
+| **GPU** | NVIDIA GTX 1060 3GB (NVENC + Immich ML) |
+| **Storage** | 12TB raw across 2 ZFS mirror pools (~6TB usable) |
+| **OS** | TrueNAS SCALE (Dragonfish 24.10) |
+| **Network** | 1Gbps Ethernet |
+| **IP Address** | 192.168.1.100 (Static) |
 
 ### Agni Server Specs
 
 | Component | Specification |
 |-----------|---------------|
-| **Device** | Skulllsaints Mini PC |
-| **RAM** | 16GB DDR4 |
+| **Device** | SkullSaints Agni Mini PC |
+| **RAM** | 16GB DDR5 |
 | **Storage** | 512GB NVMe SSD |
-| **Power** | ~20W (clamshell mode) |
+| **OS** | Ubuntu Server 24.04 LTS |
+| **Network** | 1Gbps Ethernet |
+| **IP Address** | 192.168.1.200 (Static) |
+| **Power** | ~20W |
 
 ---
 
 ## 💾 Storage Architecture
 
-All storage managed via **TrueNAS SCALE** with ZFS data integrity.
+All storage is managed via **TrueNAS SCALE** on Prime with ZFS data integrity. Both ZFS pools reside on Prime.
 
 ### Storage Pools
 
-| Pool | Hardware | Type | Capacity | Purpose |
-|------|----------|------|----------|---------|
-| **orion** | 2x 4TB WD Red Plus | Mirror | ~4TB | App configs, databases |
-| **comet** | 2x 1TB NVMe SSD | Mirror | ~1TB | Downloads, transcode cache |
-| **andromeda** | 1x 8TB Seagate IronWolf | Single | 8TB | Media, photos, documents |
+| Pool | Hardware | Type | Raw Capacity | Usable Capacity | Purpose |
+|------|----------|------|-------------|-----------------|---------|
+| **andromeda** | 2× 4TB WD Red Plus | Mirror | 8TB | ~4TB | Immich photos/videos, podcasts, audiobooks |
+| **orion** | 2× 2TB WD Blue HDD | Mirror | 4TB | ~2TB | App configs, databases, media library (Movies, TV Series) |
+
+### Data Layout
+
+```
+/mnt/orion/
+├── apps-config/               # All Docker container configurations
+│   ├── adguardhome/           # AdGuard Home (Secondary)
+│   ├── jellyfin/              # Media server config
+│   ├── sonarr/                # TV automation config
+│   ├── radarr/                # Movie automation config
+│   ├── prowlarr/              # Indexer config
+│   ├── bazarr/                # Subtitle config
+│   ├── qbittorrent/           # Torrent client config
+│   ├── sabnzbd/               # Usenet client config
+│   ├── tdarr/                 # Transcode engine config
+│   ├── gluetun/               # VPN gateway config
+│   ├── homarr/                # Dashboard config
+│   ├── tailscale/             # VPN state
+│   ├── rclone/                # Backup config
+│   └── ... (30+ services)
+│
+└── data/
+    └── media/                 # Media pipeline library
+        ├── movies/            # Movie files (managed by Radarr)
+        ├── series/            # TV series (managed by Sonarr)
+        ├── anime/             # Anime series
+        └── documentaries/     # Documentaries
+
+/mnt/andromeda/
+├── apps/
+│   └── immich/                # Photo management platform
+│       ├── uploads/           # Original photos & videos (500GB+)
+│       │   ├── library/       # Per-user photo libraries
+│       │   ├── thumbs/        # Generated thumbnails
+│       │   └── encoded-video/ # Transcoded videos
+│       ├── ml/                # ML model cache (~10GB)
+│       │   ├── facial-recognition/
+│       │   └── clip/
+│       └── db/                # PostgreSQL data (~5GB)
+│
+└── media/
+    ├── podcasts/              # Podcast library (Audiobookshelf)
+    └── audiobooks/            # Audiobook library (Audiobookshelf)
+```
 
 ### ZFS Features
 
 - ✅ **Automatic checksums** on every read
-- ✅ **Self-healing** from mirror copies
+- ✅ **Self-healing** from mirror copies (both pools are mirrored)
 - ✅ **Snapshots** for point-in-time recovery
 - ✅ **LZ4 compression** (~15% space savings)
-- ✅ **Weekly scrubs** for data integrity
+- ✅ **Weekly scrubs** for data integrity (Sundays at 23:00)
 
 ---
 
@@ -180,7 +231,7 @@ Same URL → Different Paths Based on Location
 |-----------|---------|--------|
 | **Caddy** | Reverse proxy with auto-HTTPS | Agni |
 | **Cloudflared** | Secure tunnel to Cloudflare | Agni |
-| **AdGuard Home** | DNS + ad blocking | Both (synced) |
+| **AdGuard Home** | DNS + ad blocking (Primary on Agni, Secondary on Prime) | Both (synced via AdGuard Sync on Agni) |
 | **Tailscale** | Mesh VPN | Both |
 
 ### Why Caddy Over Traefik?
@@ -234,13 +285,14 @@ graph TD
 
 | Service | Purpose | Access |
 |---------|---------|--------|
-| **Jellyfin** | Media streaming (4K hardware accel) | Public |
+| **Jellyfin** | Media streaming (hardware transcoding) | Public |
 | **Jellyseerr** | User media requests | Public |
 | **Sonarr/Radarr** | TV/Movie automation | Admin only |
 | **Prowlarr** | Indexer management | Admin only |
 | **Bazarr** | Subtitle management | Admin only |
 | **qBittorrent** | Torrent client (VPN protected) | Admin only |
 | **Tdarr** | GPU transcoding to HEVC (~40% savings) | Admin only |
+| **Audiobookshelf** | Podcasts and audiobooks | Public |
 
 ### Photo Management
 
@@ -249,9 +301,10 @@ graph TD
 | **Immich** | Google Photos replacement | Public (OAuth) |
 
 **Features:**
-- GPU facial recognition
+- GPU facial recognition (via GTX 1060)
 - Natural language search ("beach photos")
 - 500GB+ migrated from Google Photos
+- Full photo/video library stored on **andromeda** pool
 
 ### Monitoring & Infrastructure
 
@@ -300,23 +353,60 @@ Layer 4: VPN Kill Switch
 
 ---
 
+## 🔍 Data Integrity & Maintenance
+
+TrueNAS SCALE on Prime runs automated data integrity tasks for both ZFS pools.
+
+### ZFS Scrub Schedule
+
+Scrubs verify every block of data against its checksum and repair any corruption from mirror copies.
+
+| Pool | Schedule | Time |
+|------|----------|------|
+| **orion** | Weekly (Sundays) | 23:00 |
+| **andromeda** | Weekly (Sundays) | 23:00 |
+
+### ZFS Snapshot Strategy
+
+Periodic snapshots are configured for `orion/apps-config` to protect container configuration data:
+
+| Frequency | Schedule | Retention |
+|-----------|----------|-----------|
+| Hourly | Every hour, each day | 3 days |
+| Daily | 12:00 AM every day | 2 weeks |
+
+### SMART Disk Tests
+
+Automatic SMART tests monitor disk health for early failure detection:
+
+| Test Type | Scope | Schedule | Time |
+|-----------|-------|----------|------|
+| **Long Test** | Orion disks | 1st of every month | 04:00 AM |
+| **Long Test** | Andromeda disks | 1st of every month | 03:00 AM |
+| **Short Test** | All disks (Orion + Andromeda) | Weekly | 12:00 AM |
+
+---
+
 ## 🔄 Backup & Resilience
 
-### 3-2-1 Backup Rule
+### RClone Cloud Backups
 
-```
-3 Copies          2 Media Types       1 Offsite
-─────────         ─────────────       ─────────
-• Live (ZFS)      • HDD (orion)       • Cloud
-• Syncthing       • SSD (comet)         encrypted
-• Cloud                                 nightly
-```
+All critical configuration and database data is backed up to the cloud via RClone:
+
+| Source | Server | Destination | Purpose |
+|--------|--------|-------------|---------|
+| `/mnt/orion/apps-config` | Prime | pCloud | All Docker container configs |
+| Immich DB backup (from andromeda) | Prime | pCloud | Immich PostgreSQL database backup |
+| Agni Docker configs | Agni | pCloud | Agni container configs |
+
+All RClone jobs ping **Healthchecks** on success/failure for dead-man's-switch monitoring.
 
 ### Redundancy
 
 | Component | Failure Mode | Fallback |
 |-----------|--------------|----------|
-| DNS | Prime down | Agni secondary |
+| DNS | Agni (primary) down | Prime secondary DNS takes over |
+| DNS | Prime (secondary) down | Agni primary continues |
 | Reverse Proxy | Agni down | N/A (planned) |
 | VPN | Prime down | Agni subnet routing |
 | Monitoring | Agni down | N/A (single point) |
@@ -334,12 +424,19 @@ Layer 4: VPN Kill Switch
 | **Prometheus** | Metrics collection | Threshold alerts |
 | **Grafana** | Visualization | Dashboard |
 
-### Automated Maintenance
+### Automated Maintenance Summary
 
-- 🔄 **Backups:** Every 12 hours to cloud
-- 🧹 **ZFS Scrubs:** Weekly (Sundays 02:00 AM)
-- 📊 **Speedtest:** Hourly ISP monitoring
-- ❤️ **Health Pings:** Every 5 minutes
+| Task | Schedule | Details |
+|------|----------|---------|
+| 🔄 **RClone Backups** | Periodic | Configs from both servers + Immich DB to cloud |
+| 🧹 **ZFS Scrubs** | Weekly (Sundays 23:00) | Both orion & andromeda pools |
+| 📸 **ZFS Snapshots (Hourly)** | Every hour | `orion/apps-config`, kept 3 days |
+| 📸 **ZFS Snapshots (Daily)** | 12:00 AM daily | `orion/apps-config`, kept 2 weeks |
+| 🩺 **SMART Long Test (Orion)** | 1st of month, 04:00 AM | Full disk health scan |
+| 🩺 **SMART Long Test (Andromeda)** | 1st of month, 03:00 AM | Full disk health scan |
+| 🩺 **SMART Short Test (All)** | Weekly, 12:00 AM | Quick health check all disks |
+| 📊 **Speedtest** | Hourly | ISP monitoring |
+| ❤️ **Health Pings** | Every 5 minutes | Service uptime checks |
 
 ---
 
@@ -382,7 +479,7 @@ Layer 4: VPN Kill Switch
 
 5. **Setup AdGuard DNS rewrites:**
    - Add split-horizon rules
-   - Point router DHCP to AdGuard IPs
+   - Point router DHCP to AdGuard IPs (Agni primary: 192.168.1.200, Prime secondary: 192.168.1.100)
 
 ---
 
@@ -422,20 +519,16 @@ homelab/
 
 ## 🚀 Future Roadmap
 
-### Infrastructure
-- [ ] Deploy dedicated mini-PC (replacing laptop)
+### Services
 - [ ] Vaultwarden password manager
 - [ ] Nextcloud collaborative editing
-
-### Storage
-- [ ] Expand orion pool (additional mirror vdev)
-- [ ] Convert andromeda to mirror
-- [ ] Hot spare drive
-
-### Services
 - [ ] Mealie recipe management
 - [ ] Calibre-Web ebook library
 - [ ] AI stack (LiteLLM + OpenWebUI)
+
+### Storage
+- [ ] Expand orion pool (additional mirror vdev)
+- [ ] Hot spare drive
 
 ---
 
@@ -443,7 +536,9 @@ homelab/
 
 | Metric | Value |
 |--------|-------|
-| **Total Storage** | ~13TB usable |
+| **Total Raw Storage** | 12TB (2× 4TB mirror + 2× 2TB mirror) |
+| **Total Usable Storage** | ~6TB (ZFS mirror) |
+| **ZFS Pools** | 2 (andromeda + orion) |
 | **Docker Containers** | 40+ |
 | **Uptime Target** | 99.9% |
 | **Power Usage** | ~150W average |
