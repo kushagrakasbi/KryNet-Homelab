@@ -11,7 +11,9 @@ services:
       # Enable dotfiles, uploads allowed
       - X_OPTS=--dots
     volumes:
-      - ${DOCKER_CONFIG_PATH}/copyparty/config:/cfg
-      # Add your custom volume mounts below
-      # - /path/to/local:/w/Local
-      # - /mnt/remote/data:/w/Remote-Data
+      - /home/agni/apps/docker/copyparty/config:/cfg
+      - /home/agni:/w/Agni-Home
+      - /mnt/remote/orion-data:/w/Orion-Data
+      - /mnt/remote/orion-apps-config:/w/Orion-Configs
+      - /mnt/remote/andromeda-apps:/w/Andromeda-Apps
+      - /mnt/remote/andromeda-share:/w/Andromeda-Share

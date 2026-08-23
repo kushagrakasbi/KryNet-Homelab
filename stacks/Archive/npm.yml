@@ -1,0 +1,40 @@
+services:
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    container_name: npm
+    network_mode: host
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - /mnt/orion/apps-config/npm/data:/data
+      - /mnt/orion/apps-config/npm/letsencrypt:/etc/letsencrypt
+      - /mnt/orion/apps-config/npm/logs:/var/log/nginx
+      - /var/run/docker. sock:/var/run/docker.sock:ro
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite" # Using SQLite instead of MySQL for simplicity
+      INITIAL_ADMIN_EMAIL: admin@example.com
+      INITIAL_ADMIN_ PASSWORD: changeme
+
+  goaccess:
+    image: justsky/goaccess-for-nginxproxymanager:latest
+    container_name: goaccess
+    restart: unless-stopped
+    networks:
+      - kry_net
+    environment:
+      - TZ=America/New_York
+      #- SKIP_ARCHIVED_LOGS=False #optional
+      #- BASIC AUTH=False #optional
+      #- BASIC_AUTH_USERNAME=user #optional
+      #- BASIC_AUTH_PASSWORD=pass #optional
+    ports:
+      - '7880:7880'
+    volumes:
+      - /mnt/orion/apps-config/npm/data/logs:/opt/log
+
+networks:
+  kry_net:
+    external: true

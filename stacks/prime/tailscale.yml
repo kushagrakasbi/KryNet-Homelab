@@ -3,17 +3,13 @@ services:
     image: tailscale/tailscale
     restart: unless-stopped
     volumes:
-      - ${DOCKER_CONFIG_PATH}/tailscale:/var/lib
+      - /mnt/orion/apps-config/tailscale:/var/lib
       - /dev/net/tun:/dev/net/tun
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      # - TS_ROUTES=192.168.0.0/24   <-- You removed this
+      - TS_HOSTNAME=prime-server
       - TS_STATE_DIR=/var/lib/tailscale
-      # - TS_EXTRA_ARGS=--advertise-exit-node  <-- You removed this
-      
-      # ADD THIS LINE TO FIX THE ERROR:
-      - TS_EXTRA_ARGS=--reset
-      
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=192.168.0.0/24
       - TS_USERSPACE=false
     network_mode: host
     cap_add:

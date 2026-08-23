@@ -1,0 +1,46 @@
+# AdGuardHome-Sync Configuration for your setup
+# Runs every 10 minutes
+cron: "*/10 * * * *"
+
+# Run sync on startup
+runOnStart: true
+
+# Continue on errors
+continueOnError: true
+
+origin:
+  # Agni AdGuard instance
+  url: http://192.168.0.200:7000
+  username: admin
+  password: your_secure_password_here
+  insecureSkipVerify: true
+
+# Windows replica instance
+replicas:
+  - url: http://192.168.0.100:7000
+    username: admin
+    password: your_secure_password_here
+    insecureSkipVerify: true
+
+# Sync tool web interface
+api:
+  port: 8080
+  username: syncadmin
+  password: your_secure_password_here
+  darkMode: true
+
+# Features configuration - matching the official format
+features:
+  generalSettings: true
+  queryLogConfig: true
+  statsConfig: true
+  clientSettings: true
+  services: true
+  filters: true
+  dhcp:
+    serverConfig: false  # You're not using DHCP
+    staticLeases: false  # You're not using DHCP
+  dns:
+    serverConfig: true
+    accessLists: true
+    rewrites: true  # Important for your krynet.cc domain rewrites

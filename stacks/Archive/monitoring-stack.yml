@@ -1,0 +1,98 @@
+version: "3.8"
+
+services:
+  # uptime-kuma:
+  #   image: louislam/uptime-kuma:1 # Using version 1 tag is recommended
+  #   container_name: uptime-kuma
+  #   env_file:
+  #     - stack.env
+  #   volumes:
+  #     - ${DOCKER_CONFIG_PATH}/uptime-kuma:/app/data
+  #   ports:
+  #     - "3001:3001"
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #   restart: unless-stopped
+  #   networks:
+  #     - kry_net
+  #     - traefik_proxy
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    env_file:
+      - stack.env
+    ports:
+      - "9090:9090"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/prometheus/data:/prometheus
+      - ${DOCKER_CONFIG_PATH}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml # MODIFIED
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      # Mount the Docker socket as read-only for security
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # Using port 8088 to avoid conflict with qBittorrent's 8080
+      - "8088:8080"
+    environment:
+      - TZ=Asia/Kolkata
+      - DOZZLE_NO_ANALYTICS=true
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  gotify:
+    image: gotify/server:latest
+    container_name: gotify
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # Sets the 'admin' user's password from your .env file
+      - GOTIFY_DEFAULTUSER_PASS=${GOTIFY_ADMIN_PASS}
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/gotify:/app/data
+    ports:
+      # Port 8089 for optional local access
+      - "8089:80"
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3123:3000"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/grafana:/var/lib/grafana
+    networks:
+      - kry_net
+      - traefik_proxy
+
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

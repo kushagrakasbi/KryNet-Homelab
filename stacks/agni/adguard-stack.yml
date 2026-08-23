@@ -28,8 +28,8 @@ services:
 
     volumes:
       # Use absolute paths on the Ubuntu laptop
-      - ${DOCKER_CONFIG_PATH}/adguard/work:/opt/adguardhome/work
-      - ${DOCKER_CONFIG_PATH}/adguard/conf:/opt/adguardhome/conf
+      - /home/agni/apps/docker/adguard/work:/opt/adguardhome/work
+      - /home/agni/apps/docker/adguard/conf:/opt/adguardhome/conf
     environment:
       # PUID/PGID are not typically used by AdGuard Home
       - TZ=${TZ:-Asia/Kolkata} # Set Timezone (replace if needed, or define TZ in .env)
@@ -49,7 +49,7 @@ services:
       - CONFIGFILE=/config/adguardhome-sync.yaml
     volumes:
       # Mount the config directory
-      - ${DOCKER_CONFIG_PATH}/adguard-sync:/config
+      - /home/agni/apps/docker/adguard-sync:/config
     ports:
       # Web UI for monitoring sync
       - "8082:8080"

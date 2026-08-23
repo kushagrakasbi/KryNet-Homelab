@@ -1,0 +1,98 @@
+# =============================================================================
+#  LiteLLM Proxy Configuration — KryNet Homelab
+#  Server: Prime (192.168.0.100)
+#  Docs: docs/AI-STACK.md
+# =============================================================================
+
+model_list:
+
+  # ===========================================================================
+  #  ANTHROPIC — Claude Models
+  #  API Keys: https://console.anthropic.com/settings/keys
+  #  Pricing: https://www.anthropic.com/pricing
+  # ===========================================================================
+
+  - model_name: claude-opus-4.6
+    litellm_params:
+      model: anthropic/claude-opus-4-6-20260205
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-opus-4.5
+    litellm_params:
+      model: anthropic/claude-opus-4-5-20251124
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-sonnet-4.5
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-haiku-4.5
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251015
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # ===========================================================================
+  #  OPENAI — GPT Models
+  #  API Keys: https://platform.openai.com/api-keys
+  #  Pricing: https://openai.com/pricing
+  # ===========================================================================
+
+  - model_name: gpt-5.3
+    litellm_params:
+      model: openai/gpt-5.3
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: gpt-5.2
+    litellm_params:
+      model: openai/gpt-5.2
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: gpt-5.1
+    litellm_params:
+      model: openai/gpt-5.1
+      api_key: os.environ/OPENAI_API_KEY
+
+  # ===========================================================================
+  #  GOOGLE — Gemini Models
+  #  API Keys: https://aistudio.google.com/app/apikey
+  #  Free tier: 15 RPM / 1500 req/day (no credit card needed)
+  # ===========================================================================
+
+  - model_name: gemini-3.1-pro
+    litellm_params:
+      model: gemini/gemini-3.1-pro-preview
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: gemini-3.1-flash
+    litellm_params:
+      model: gemini/gemini-3.1-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: gemini-3-pro
+    litellm_params:
+      model: gemini/gemini-3-pro-preview
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: gemini-3-flash
+    litellm_params:
+      model: gemini/gemini-3-flash-preview
+      api_key: os.environ/GEMINI_API_KEY
+
+
+# =============================================================================
+#  LITELLM SETTINGS
+# =============================================================================
+litellm_settings:
+  drop_params: true             # Ignore unsupported params per provider
+  set_verbose: false            # Set true for debugging
+  num_retries: 2                # Retry failed requests
+  request_timeout: 120          # 2 min timeout for long responses
+  cache: false                  # Requires Redis; enable if you add one
+
+# =============================================================================
+#  GENERAL SETTINGS
+# =============================================================================
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

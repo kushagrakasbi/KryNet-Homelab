@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  syncthing-legion:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing-legion
+    hostname: syncthing-legion
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Asia/Kolkata}
+    volumes:
+      # Config path on your Legion server
+      - /home/legion/apps/syncthing/config:/config
+      
+      # --- ADD THESE VOLUMES ---
+      # 1. Your existing sync folder
+      - /home/legion/apps/syncthing/data:/data/sync
+      # 2. Your Legion apps folder (MOUNTED READ-ONLY)
+      - /home/legion/apps:/data/legion-apps-backup:ro
+      # 3. A new folder to store the backup FROM TrueNAS
+      - /home/legion/apps/syncthing/data/truenas-backup:/data/truenas-backup
+      
+    ports:
+      - "8384:8384"
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    networks:
+      - legion_network
+
+networks:
+  legion_network:
+    external: true

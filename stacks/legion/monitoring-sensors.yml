@@ -1,0 +1,69 @@
+services:
+  # --- Node Exporter (Host System Metrics) ---
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter_legion
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - legion_net
+
+  # --- cAdvisor (Container Resource Metrics) ---
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor_legion
+    restart: unless-stopped
+    ports:
+      - "8087:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - legion_net
+
+  # --- Dozzle (Real-time Container Log Streaming) ---
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle_legion
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - legion_net
+
+  # --- NVIDIA GPU Exporter (RTX 3060 Metrics) ---
+  nvidia-gpu-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:latest
+    container_name: nvidia_gpu_exporter_legion
+    restart: unless-stopped
+    ports:
+      - "9835:9835"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - legion_net
+
+networks:
+  legion_net:
+    name: legion_net
+    external: true

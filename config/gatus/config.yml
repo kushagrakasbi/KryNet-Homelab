@@ -1,0 +1,487 @@
+alerting:
+  gotify:
+    server-url: "http://gotify:80"
+    token: ""
+    priority: 5
+    default-alert:
+      description: "health-check failed"
+      send-on-resolved: true
+      failure-threshold: 3
+      success-threshold: 2
+      minimum-reminder-interval: 1h
+  discord:
+    webhook-url: "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+    default-alert:
+      description: "health-check failed"
+      send-on-resolved: true
+      failure-threshold: 3
+      success-threshold: 2
+      minimum-reminder-interval: 1h
+
+ui:
+  title: "Krynet Status"
+  header: "System Health"
+
+endpoints:
+  # =================================================
+  # 🧠 CORE INFRASTRUCTURE (Critical tier)
+  # =================================================
+  - name: "Agni (Network Core)"
+    group: "Core"
+    url: "tcp://192.168.0.200:80"
+    interval: 30s
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  - name: "Prime (TrueNAS UI)"
+    group: "Core"
+    url: "http://192.168.0.100:88"
+    interval: 30s
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  - name: "Legion (AI & GPU Core)"
+    group: "Core"
+    url: "tcp://192.168.0.150:22"
+    interval: 30s
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  # =================================================
+  # 🔐 SECURITY (Critical tier)
+  # =================================================
+  - name: "Vaultwarden"
+    group: "Security"
+    url: "http://192.168.0.200:8222"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  # =================================================
+  # 🏠 SMART HOME (Critical tier)
+  # =================================================
+  - name: "Home Assistant"
+    group: "Smart Home"
+    url: "http://192.168.0.200:8123"
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*Home Assistant*)"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  - name: "AdGuard Home (Agni)"
+    group: "Smart Home"
+    url: "http://192.168.0.200:7000"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  - name: "AdGuard Home (Prime)"
+    group: "Smart Home"
+    url: "http://192.168.0.100:7000"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  # =================================================
+  # 🍿 MEDIA & PHOTOS (Standard tier — uses defaults)
+  # =================================================
+  - name: "Jellyfin"
+    group: "Media"
+    url: "http://192.168.0.100:8096/health"
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Immich Photos"
+    group: "Media"
+    url: "http://192.168.0.100:2283/server/ping"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Tdarr (Transcoding)"
+    group: "Media"
+    url: "http://192.168.0.100:8265"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Audiobookshelf"
+    group: "Media"
+    url: "http://192.168.0.100:13378"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Jellystat"
+    group: "Media"
+    url: "http://192.168.0.100:3005"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  # =================================================
+  # 🏴‍☠️ ARR STACK (Standard tier — uses defaults)
+  # =================================================
+  - name: "Sonarr"
+    group: "Automation"
+    url: "http://192.168.0.100:8989/ping"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Radarr"
+    group: "Automation"
+    url: "http://192.168.0.100:7878/ping"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Whisparr"
+    group: "Automation"
+    url: "http://192.168.0.100:6969/ping"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Prowlarr (Indexer)"
+    group: "Automation"
+    url: "http://192.168.0.100:9696/ping"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Jellyseerr (Requests)"
+    group: "Automation"
+    url: "http://192.168.0.100:5055/api/v1/status"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Bazarr (Subtitles)"
+    group: "Automation"
+    url: "http://192.168.0.100:6767/api/swagger.json"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "FlareSolverr"
+    group: "Automation"
+    url: "http://192.168.0.100:8191"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*FlareSolverr*)"
+    alerts:
+      - type: gotify
+      - type: discord
+
+
+  - name: "LiteLLM Gateway"
+    group: "AI Stack"
+    url: "http://192.168.0.150:4000/health/liveness"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "OpenWebUI"
+    group: "AI Stack"
+    url: "http://192.168.0.150:3999"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Ollama Engine (CUDA)"
+    group: "AI Stack"
+    url: "http://192.168.0.150:11434"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Immich ML Node (CUDA)"
+    group: "AI Stack"
+    url: "http://192.168.0.150:3003/ping"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  # =================================================
+  # 📝 PRODUCTIVITY (Standard tier — uses defaults)
+  # =================================================
+  - name: "FreshRSS"
+    group: "Productivity"
+    url: "http://192.168.0.100:8086"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Paperless-NGX"
+    group: "Productivity"
+    url: "http://192.168.0.100:8089"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  # =================================================
+  # 📥 DOWNLOADERS (Standard tier — uses defaults)
+  # =================================================
+  - name: "qBittorrent"
+    group: "Downloads"
+    url: "http://192.168.0.100:8080"
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "SABnzbd"
+    group: "Downloads"
+    url: "http://192.168.0.100:8085/api?mode=version"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  # =================================================
+  # 📊 DASHBOARDS (Low-priority tier)
+  # =================================================
+  - name: "Homarr"
+    group: "Dashboards"
+    url: "http://192.168.0.100:7575"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Homepage"
+    group: "Dashboards"
+    url: "http://192.168.0.200:3075"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Speedtest Tracker"
+    group: "Dashboards"
+    url: "http://192.168.0.100:8093"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  # =================================================
+  # 🛠️ ADMIN & UTILS (Low-priority tier)
+  # =================================================
+  - name: "Portainer (Prime)"
+    group: "Admin"
+    url: "https://192.168.0.100:9443"
+    client:
+      insecure: true
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Portainer (Agni)"
+    group: "Admin"
+    url: "https://192.168.0.200:9443"
+    client:
+      insecure: true
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Copyparty (File Server)"
+    group: "Admin"
+    url: "http://192.168.0.200:3923"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Dozzle Logs (Prime)"
+    group: "Admin"
+    url: "http://192.168.0.100:8088"
+    interval: 10m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Dozzle Logs (Agni)"
+    group: "Admin"
+    url: "http://192.168.0.200:8088"
+    interval: 10m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Dozzle Logs (Legion)"
+    group: "Admin"
+    url: "http://192.168.0.150:8088"
+    interval: 10m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Portainer Agent (Legion)"
+    group: "Admin"
+    url: "tcp://192.168.0.150:9001"
+    interval: 5m
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Prometheus"
+    group: "Admin"
+    url: "http://192.168.0.200:9090"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Gotify"
+    group: "Admin"
+    url: "http://192.168.0.200:8089"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h

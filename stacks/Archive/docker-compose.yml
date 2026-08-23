@@ -1,0 +1,122 @@
+version: "3.8"
+
+# KryNet-Agni Stack (Network Core)
+# Node: 192.168.0.200
+# Role: Always-On Brain (Caddy, AdGuard, Home Assistant, Tailscale)
+
+services:
+  # ============================================
+  # Portainer - Container Management
+  # ============================================
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9443:9443"
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    environment:
+      - TZ=Asia/Kolkata
+
+  # ============================================
+  # Caddy - Reverse Proxy with Cloudflare DNS
+  # ============================================
+  caddy:
+    build:
+      context: /home/agni/apps/docker/caddy
+      dockerfile: Dockerfile
+    image: caddy-cloudflare:custom
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/agni/apps/docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - /home/agni/apps/docker/caddy/data:/data
+      - /home/agni/apps/docker/caddy/config:/config
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - ACME_AGREE=true
+
+  # ============================================
+  # AdGuard Home - Primary DNS Server
+  # ============================================
+  adguardhome: # Renamed service for clarity
+    image: adguard/adguardhome:latest
+    container_name: adguardhome # Renamed container for clarity
+    ports:
+      # --- DNS Ports ---
+      # Check if port 53 is free on host! If not, change to e.g., "5353:53/tcp"
+      - "53:53/tcp"
+      - "53:53/udp"
+
+      # --- UI & Setup Ports (DIFFERENT from primary) ---
+      # Admin Panel UI - Changed to 7002 to avoid conflict with primary (7000)
+      - "7000:80/tcp"
+      # Initial Setup - Changed to 7003 to avoid conflict with primary (7001)
+      - "7001:3000/tcp"
+
+      # --- Encrypted DNS Ports (DIFFERENT from primary) ---
+      # DoH (DNS-over-HTTPS) - Changed to 8444
+      - "8444:443/tcp"
+      - "8444:443/udp"
+      # DoT (DNS-over-TLS) - Changed to 854
+      - "854:853/tcp"
+      # DoQ (DNS-over-QUIC) - Changed ports
+      - "785:784/udp"
+      - "8854:8853/udp"
+
+    volumes:
+      # Use absolute paths on the Ubuntu laptop
+      - /home/agni/apps/docker/adguard/work:/opt/adguardhome/work
+      - /home/agni/apps/docker/adguard/conf:/opt/adguardhome/conf
+    environment:
+      # PUID/PGID are not typically used by AdGuard Home
+      - TZ=${TZ:-Asia/Kolkata} # Set Timezone (replace if needed, or define TZ in .env)
+    restart: unless-stopped
+    networks:
+      - agni_net # Connect to the network created for Portainer
+
+networks:
+  agni_net:
+    external: true
+
+  # ============================================
+  # Home Assistant - Smart Home Hub
+  # ============================================
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/agni/apps/docker/ha/config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    environment:
+      - TZ=Asia/Kolkata
+    privileged: true
+
+  # ============================================
+  # Tailscale - Mesh VPN
+  # ============================================
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/agni/apps/docker/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_ROUTES=192.168.0.0/24
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--advertise-exit-node
+      - TS_USERSPACE=false
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+

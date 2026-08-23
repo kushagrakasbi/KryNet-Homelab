@@ -1,0 +1,50 @@
+# /home/agni/apps/docker/homepage/config/settings.yaml
+
+title: KryNet Homelab
+theme: dark
+color: slate
+headerStyle: boxedWidgets
+statusStyle: "basic"
+target: _blank
+iconStyle: theme
+useEqualHeights: true
+cardBlur: xl
+
+layout:
+  # --- ROW 1: The "Admin" Row (Core & Network) ---
+  - Core Infrastructure:
+      style: row
+      columns: 4
+      icon: mdi-server
+      
+  - Network Tools:
+      style: row
+      columns: 4
+      icon: mdi-access-point-network
+
+  # --- ROW 2: The "Content" Row (Media & Home) ---
+  - Media:
+      style: row
+      columns: 4
+      icon: mdi-multimedia
+
+  - Smart Home & AI:
+      style: row
+      columns: 4
+      icon: mdi-home-automation
+
+  - Productivity:
+      style: row
+      columns: 3
+      icon: mdi-file-document-outline
+
+  # --- ROW 3: The "Robot" Row (Automation) ---
+  - Automation:
+      style: row
+      columns: 6 # Many items, so give it more columns to spread out
+      icon: mdi-robot
+
+  - Downloads:
+      style: row
+      columns: 2
+      icon: mdi-download

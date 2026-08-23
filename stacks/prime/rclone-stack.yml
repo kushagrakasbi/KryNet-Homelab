@@ -4,6 +4,9 @@ services:
     image: rclone/rclone:latest
     container_name: backup-prime
     restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
     environment:
       - TZ=Asia/Kolkata
       - PUID=0
@@ -12,17 +15,17 @@ services:
     command:
       - -c
       - |
-        HC_UUID="$${HC_PRIME_UUID}"
+        HC_UUID="f7d7f21c-1043-4fed-906e-63d6b4ec6174"
         
         while true; do
           echo "--- Starting Krynet Prime Backup at $(date) ---"
           
-          wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/start"
+          wget -q --spider --tries=5 --timeout=10 "https://hc.krynet.cc/ping/$$HC_UUID/start"
           
           FAIL=0
 
           echo "--- Syncing Orion/Apps-Config ---"
-          rclone sync /data/orion-configs $${BACKUP_REMOTE}:Backups/Server-Prime/Configs \
+          rclone sync /data/orion-configs pcloud:Backups/Krynet-Prime/Configs \
             --config /config/rclone.conf -L \
             --ignore-errors \
             --exclude ".git/**" \
@@ -82,6 +85,13 @@ services:
             --exclude "bazarr/backup/**" \
             --exclude "tdarr/server/Tdarr/nodePlugins.Zip" \
             --exclude "tdarr/server/Tdarr/**" \
+            --exclude "tdarr/temp/**" \
+            --exclude "temp/**" \
+            --exclude "*.mkv" \
+            --exclude "*.mp4" \
+            --exclude "*.avi" \
+            --exclude "*.ts" \
+            --exclude "*.mov" \
             --exclude "immich/db/**" \
             --exclude "immich/postgres/**" \
             --exclude "immich/ml/**" \
@@ -119,7 +129,7 @@ services:
           if [ $? -ne 0 ]; then FAIL=1; fi
 
           echo "--- Syncing Andromeda/Apps ---"
-          rclone sync /data/andromeda-apps $${BACKUP_REMOTE}:Backups/Server-Prime/Apps \
+          rclone sync /data/andromeda-apps pcloud:Backups/Krynet-Prime/Apps \
             --config /config/rclone.conf -L \
             --ignore-errors \
             --exclude ".git/**" \
@@ -167,16 +177,22 @@ services:
           echo "--- Backup Finished. Sleeping for 12h ---"
           
           if [ $$FAIL -eq 0 ]; then
-              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID"
+              wget -q --spider --tries=5 --timeout=10 "https://hc.krynet.cc/ping/$$HC_UUID"
               echo "Healthcheck: SUCCESS"
           else
-              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/fail"
+              wget -q --spider --tries=5 --timeout=10 "https://hc.krynet.cc/ping/$$HC_UUID/fail"
               echo "Healthcheck: FAILED"
           fi
           
           sleep 43200
         done
     volumes:
-      - ${DOCKER_CONFIG_PATH}/rclone:/config
-      - ${DOCKER_CONFIG_PATH}:/data/orion-configs:ro
-      - ${APP_DATA_PATH}:/data/andromeda-apps:ro
+      - /mnt/orion/apps-config/rclone:/config
+      - /mnt/orion/apps-config:/data/orion-configs:ro
+      - /mnt/andromeda/apps:/data/andromeda-apps:ro
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  caddy:
+    # Portainer Web Editor cannot build from context. 
+    # Must use a pre-built image.
+    image: caddy-cloudflare:custom
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # Use the variable defined in your Portainer Environment
+      # Pointing to the file created in /mnt/orion/apps-config/caddy/Caddyfile
+      - ${DOCKER_CONFIG_PATH}/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ${DOCKER_CONFIG_PATH}/caddy/data:/data
+      - ${DOCKER_CONFIG_PATH}/caddy/config:/config
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - ACME_AGREE=true
+    networks:
+      - traefik_proxy
+
+networks:
+  traefik_proxy:
+    external: true

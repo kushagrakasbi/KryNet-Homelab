@@ -11,7 +11,7 @@ services:
       - NET_RAW
     volumes:
       # Use the path on your Ubuntu laptop for persistent state
-      - ${DOCKER_CONFIG_PATH}/tailscale:/var/lib/tailscale
+      - /home/agni/apps/docker/tailscale:/var/lib/tailscale
       # Mount the TUN device needed for VPN connections
       - /dev/net/tun:/dev/net/tun
     environment:
@@ -22,7 +22,7 @@ services:
 
       # --- Hostname ---
       # Set a unique hostname for this node in the Tailscale admin panel
-      - TS_HOSTNAME=${TS_HOSTNAME:-homelab-network}
+      - TS_HOSTNAME=agni-server
 
       # --- State Directory ---
       # Explicitly define the state directory inside the container
@@ -32,7 +32,7 @@ services:
       # Your TrueNAS server handles routing and exit node functionality.
       # Including them here would cause conflicts.
       # - TS_ROUTES=192.168.0.0/24
-      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=${LAN_SUBNET:-192.168.1.0/24}
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=192.168.0.0/24
 
       # Optional: Add tags for ACLs if needed
       # - TS_TAGS=tag:server,tag:laptop

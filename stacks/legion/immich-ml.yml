@@ -1,0 +1,29 @@
+services:
+  immich-machine-learning:
+    container_name: immich_machine_learning
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3}-cuda
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    volumes:
+      - /home/legion/apps/docker/immich-ml-cache:/cache
+    environment:
+      - NODE_ENV=production
+      - MACHINE_LEARNING__FACE_RECOGNITION_MODEL=mobile_face
+      - MACHINE_LEARNING__FACE_DETECTION_MODEL=yunet
+      - MACHINE_LEARNING__CLIP_MODEL=ViT-B-16__laion2b_s34b_b88k
+      - MACHINE_LEARNING_WORKERS=2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - legion_net
+
+networks:
+  legion_net:
+    name: legion_net
+    external: true

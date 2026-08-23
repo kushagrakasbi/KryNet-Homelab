@@ -1,0 +1,10 @@
+version: "3.8"
+name: cloudflared
+services:
+    cloudflared:
+        env_file:
+          - stack.env
+        image: cloudflare/cloudflared:latest
+        command: tunnel --no-autoupdate run --token ${CF_TOKEN}
+        network_mode: host
+        restart: 'unless-stopped'

@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Mount the Docker socket so Traefik can listen to container events
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount the configuration files and directories we created
+      - ${DOCKER_CONFIG_PATH}/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ${DOCKER_CONFIG_PATH}/traefik/dynamic_configs:/etc/traefik/dynamic_configs:ro
+      - ${DOCKER_CONFIG_PATH}/traefik/letsencrypt:/letsencrypt
+      - ${DOCKER_CONFIG_PATH}/traefik/logs:/logs
+    environment:
+      # Load the Cloudflare API Token from your .env file
+      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      # Use the network we created
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      # --- Router ---
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.krynet.cc`) || Host(`traefik.local.kkasbi.site`) || Host(`traefik.tail.kkasbi.site`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      # --- SSL ---
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=myresolver"
+      # --- FIX 2: CORRECT ROUTER NAME ---
+      # Changed "homepage" to "traefik-dashboard" to match the router name
+      - "traefik.http.routers.traefik-dashboard.tls.domains[0].main=traefik.krynet.cc"
+      - "traefik.http.routers.traefik-dashboard.tls.domains[0].sans=traefik.local.kkasbi.site,traefik.tail.kkasbi.site"
+      # --- Middleware (Basic Authentication) ---
+      # - "traefik.http.routers.traefik-dashboard.middlewares=auth"
+      # - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$b5r0tenc$$AYr5ag32Vw5L9s2a4f0A/1"
+
+networks:
+  traefik_proxy:
+    external: true

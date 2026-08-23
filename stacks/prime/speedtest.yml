@@ -36,7 +36,7 @@ services:
       # --- Database Connection ---
       - DB_CONNECTION=pgsql
       # --- MODIFIED: Point to your central DB server ---
-      - DB_HOST=${DB_HOST:-192.168.1.100}
+      - DB_HOST=192.168.0.100
       - DB_PORT=5432
       # --- MODIFIED: Use your central DB credentials ---
       # This is the DB name you already created

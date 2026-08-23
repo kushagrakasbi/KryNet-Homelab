@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  paperless-valkey:
+    image: docker.io/valkey/valkey:8-bookworm
+    container_name: paperless_valkey
+    restart: unless-stopped
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/paperless/redis:/data
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  paperless-webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless-webserver
+    depends_on:
+      - paperless-valkey
+    ports:
+      - "8089:8000"
+    volumes:
+      # Configs (still on your app-configs dataset)
+      - ${DOCKER_CONFIG_PATH}/paperless/config:/usr/src/paperless/config
+      # Thumbnails/etc (still on your app-configs dataset)
+      - ${DOCKER_CONFIG_PATH}/paperless/media:/usr/src/paperless/media
+      # --- MODIFIED ---
+      # Original Documents (now on your 'andromeda/documents' dataset)
+      - /mnt/andromeda/apps/paperless/documents:/usr/src/paperless/data
+      # --- MODIFIED ---
+      # Consume Folder (now on your 'andromeda/documents' dataset)
+      - /mnt/andromeda/apps/paperless/documents/consume:/usr/src/paperless/consume
+    env_file:
+      - stack.env
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - PAPERLESS_REDIS=redis://paperless-valkey:6379
+      - PAPERLESS_DBENGINE=postgresql
+      - PAPERLESS_DBHOST=192.168.0.100
+      - PAPERLESS_DBPORT=5432
+      - PAPERLESS_DBNAME=paperless
+      - PAPERLESS_DBUSER=postgres
+      - PAPERLESS_DBPASS=${POSTGRES_PASS}
+      - PAPERLESS_CONSUMER_POLLING_INTERVAL=60
+      - PAPERLESS_OCR_LANGUAGE=eng
+      # 1. Set this to your ONE primary URL
+      - PAPERLESS_URL=https://docs.krynet.cc
+      # 2. Set this to a comma-separated list of HOSTNAMES ONLY
+      - PAPERLESS_ALLOWED_HOSTS=192.168.0.100,docs.krynet.cc,docs.lan.kkasbi.in
+      # 3. This one is for origins (with https://) and is correct
+      - PAPERLESS_CSRF_TRUSTED_ORIGINS=https://docs.krynet.cc,https://docs.lan.kkasbi.in
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

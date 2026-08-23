@@ -1,3 +1,13 @@
+# ==============================================================================
+# Cloudflare Tunnel Stack (ARCHIVED / DECOMMISSIONED - Path B)
+# ==============================================================================
+# KryNet runs on a 100% Private Zero-Trust WireGuard Mesh via Tailscale.
+# Public ingress via Cloudflared is DECOMMISSIONED to eliminate public attack surface.
+# 
+# To re-enable public access in the future:
+# 1. Deploy this stack in Portainer (Agni Master: https://portainer2.krynet.cc).
+# 2. Ensure CF_TOKEN is present in stack.env on Agni.
+# ==============================================================================
 name: cloudflared
 services:
     cloudflared:
@@ -7,4 +17,3 @@ services:
         command: tunnel --no-autoupdate run --token ${CF_TOKEN}
         network_mode: host
         restart: 'unless-stopped'
-

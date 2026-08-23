@@ -1,0 +1,21 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    env_file:
+      - stack.env
+    ports:
+      - "8222:80"
+    environment:
+      - TZ=${TZ}
+      - SIGNUPS_ALLOWED=true  # Set to false after first signup
+      - DOMAIN=https://vault.krynet.cc
+    volumes:
+      - /home/agni/apps/docker/vaultwarden:/data
+    networks:
+      - agni_net
+
+networks:
+  agni_net:
+    external: true

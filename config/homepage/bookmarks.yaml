@@ -1,0 +1,22 @@
+# bookmarks.yaml
+
+---
+# - Misce:
+#     - AdGuard Sync:
+#         - abbr: AG
+#           href: https://adsync.krynet.cc # Using IP as it may not have a domain
+#     - Immich Power Tools:
+#         - abbr: IT
+#           href: http://192.168.0.100:8001 # Using IP as it may not have a domain    
+
+- Bookmarks:
+    - Github:
+        - abbr: GH
+          href: https://github.com/
+    - Reddit:
+        - icon: reddit.png
+          href: https://reddit.com/
+          description: The front page of the internet
+    - YouTube:
+        - abbr: YT
+          href: https://youtube.com/

@@ -1,0 +1,31 @@
+# widgets.yaml
+
+- search:
+    provider: google
+    focus: true
+    target: _blank
+
+- datetime:
+    text_size: 3xl
+    locale: en-IN
+    format:
+        dateStyle: short
+        timeStyle: short
+        hourCycle: h23
+
+- resources:
+    label: TrueNAS Server
+    cpu: true
+    cputemp: true
+    memory: true
+    uptime: true
+
+
+
+#- openmeteo:
+#    label: Pimpri-Chinchwad
+#    latitude: 18.62
+#    longitude: 73.81
+#    timezone: Asia/Kolkata
+#    units: metric
+#    cache: 5

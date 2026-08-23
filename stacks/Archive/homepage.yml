@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      # Exposing on a custom port 7580 to avoid conflicts
+      - "3075:3000"
+    volumes:
+      # Use your standard config path and mount the docker socket for integrations
+      - ${DOCKER_CONFIG_PATH}/homepage:/app/config
+      - ${DOCKER_CONFIG_PATH}/homepage/images:/app/public/images
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    environment:
+      # Set PUID/PGID and TZ from your .env file
+      # - PUID=${PUID}
+      # - PGID=${PGID}
+      - TZ=${TZ}
+      # IMPORTANT: Set this to the domain you will use to access Homepage
+      - HOMEPAGE_ALLOWED_HOSTS=home.krynet.cc,home.lan.kkasbi.in,home.kkasbi.in,home.kkasbi.site,192.168.0.100:3075,172.16.3.13:3075
+    # --- ADD THIS SECTION ---
+    # Grant the container user access to the host's docker group
+    group_add:
+      - "999"
+    networks:
+      - kry_net
+      - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

@@ -12,14 +12,14 @@ services:
     command:
       - -c
       - |
-        HC_UUID="$${HC_AGNI_UUID}"
+        HC_UUID="75a5ed4c-9dba-4778-908e-5691784ac588"
         
         while true; do
           echo "--- Starting Agni Backup at $(date) ---"
           
-          wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/start"
+          wget -q --spider --tries=5 --timeout=10 "https://hc.krynet.cc/ping/$$HC_UUID/start"
           
-          rclone sync /data $${BACKUP_REMOTE}:Backups/Server-Agni \
+          rclone sync /data pcloud:Backups/Krynet-Agni \
             --config /config/rclone.conf \
             --ignore-errors \
             --exclude ".git/**" \
@@ -69,10 +69,10 @@ services:
             --verbose
           
           if [ $? -eq 0 ]; then
-              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID"
+              wget -q --spider --tries=5 --timeout=10 "https://hc.krynet.cc/ping/$$HC_UUID"
               echo "Backup SUCCESS"
           else
-              wget -q --spider --tries=5 --timeout=10 "$${HEALTHCHECK_URL}/ping/$$HC_UUID/fail"
+              wget -q --spider --tries=5 --timeout=10 "https://hc.krynet.cc/ping/$$HC_UUID/fail"
               echo "Backup FAILED"
           fi
           
@@ -80,5 +80,5 @@ services:
           sleep 43200
         done
     volumes:
-      - ${DOCKER_CONFIG_PATH}/rclone/config:/config
-      - ${DOCKER_CONFIG_PATH}:/data:ro
+      - /home/agni/apps/docker/rclone/config:/config
+      - /home/agni/apps/docker:/data:ro

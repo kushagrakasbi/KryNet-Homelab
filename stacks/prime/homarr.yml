@@ -6,11 +6,13 @@ services:
     container_name: homarr
     image: ghcr.io/homarr-labs/homarr:latest
     restart: unless-stopped
+    env_file:
+      - stack.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
-      - ${DOCKER_CONFIG_PATH}/homarr:/appdata
+      - /mnt/orion/apps-config/homarr:/appdata
     environment:
-      - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY} # Generate with `openssl rand -hex 32`
+      - SECRET_ENCRYPTION_KEY=${HOMARR_ENCRYPTION_KEY} # <--- can be generated with `openssl rand -hex 32`
     ports:
       - '7575:7575'
     networks:

@@ -1,0 +1,11 @@
+# /home/agni/apps/docker/homepage/config/docker.yaml
+
+# Local Docker (Agni)
+agni:
+  socket: /var/run/docker.sock
+
+# Remote Docker (Prime)
+# Connects to the proxy we set up in Phase 1
+docker: # Keeping the name 'docker' so we don't have to rewrite all of services.yaml!
+  host: 192.168.0.100
+  port: 2375

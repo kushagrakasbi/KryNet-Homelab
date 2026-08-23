@@ -1,0 +1,47 @@
+services:
+  backup-legion:
+    image: rclone/rclone:latest
+    container_name: backup-legion
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+      - PUID=1000
+      - PGID=1000
+    entrypoint: "/bin/sh"
+    command:
+      - -c
+      - |
+        while true; do
+          echo "--- Starting Krynet Legion Backup at $(date) ---"
+          
+          rclone sync /data pcloud:Backups/Krynet-Legion \
+            --config /config/rclone.conf \
+            -L \
+            --ignore-errors \
+            --exclude ".git/**" \
+            --exclude "*.log" \
+            --exclude "*.log.*" \
+            --exclude "*.tmp" \
+            --exclude ".DS_Store" \
+            --exclude "._*" \
+            --exclude "*.sock" \
+            --exclude "ollama/models/**" \
+            --exclude "immich-ml-cache/**" \
+            --exclude "openwebui/cache/**" \
+            --exclude "tdarr/temp/**" \
+            --exclude "temp/**" \
+            --exclude "*.mkv" \
+            --exclude "*.mp4" \
+            --exclude "tailscale/*.state" \
+            --exclude "tailscale/**/*.log*" \
+            --exclude "tailscale/*.log*" \
+            --transfers 4 \
+            --checkers 8 \
+            --verbose
+          
+          echo "--- Legion Backup Complete. Sleeping for 12h ---"
+          sleep 43200
+        done
+    volumes:
+      - /home/legion/apps/docker/rclone/config:/config
+      - /home/legion/apps/docker:/data:ro

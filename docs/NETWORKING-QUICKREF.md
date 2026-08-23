@@ -22,8 +22,7 @@
                              │
               ╔══════════════▼══════════════╗
               ║      🔥 AGNI SERVER         ║
-              ║       192.168.1.200         ║
-              ║   (SkullSaints Mini PC)     ║
+              ║       192.168.0.200         ║
               ║                             ║
               ║   Caddy ↔ Cloudflared       ║
               ║   AdGuard (Primary)         ║
@@ -33,11 +32,10 @@
                              ║
               ╔══════════════▼══════════════╗
               ║      🌟 PRIME SERVER        ║
-              ║       192.168.1.100         ║
-              ║   (MSI Cabinet, TrueNAS)    ║
+              ║       192.168.0.100         ║
               ║                             ║
               ║   AdGuard (Secondary)       ║
-              ║   All Storage + Services    ║
+              ║   All Services              ║
               ╚═════════════════════════════╝
 ```
 
@@ -49,21 +47,21 @@
 
 | Service | URL |
 |---------|-----|
-| Dashboard | `https://home.example.com` |
-| Photos | `https://photos.example.com` |
-| Media | `https://media.example.com` |
-| Requests | `https://request.example.com` |
-| Status | `https://status.example.com` |
+| Dashboard | `https://home.krynet.cc` |
+| Photos | `https://photos.krynet.cc` |
+| Media | `https://media.krynet.cc` |
+| Requests | `https://request.krynet.cc` |
+| Status | `https://status.krynet.cc` |
 
 ### Internal/VPN Access (No Auth Proxy)
 
 | Service | URL |
 |---------|-----|
-| TrueNAS | `https://server.internal.home` |
-| Portainer (Prime) | `https://portainer.internal.home` |
-| Portainer (Agni) | `https://portainer2.internal.home` |
-| Logs (Prime) | `https://logs.internal.home` |
-| Logs (Agni) | `https://logs2.internal.home` |
+| TrueNAS | `https://server.lan.kkasbi.in` |
+| Portainer (Prime) | `https://portainer.lan.kkasbi.in` |
+| Portainer (Agni) | `https://portainer2.lan.kkasbi.in` |
+| Logs (Prime) | `https://logs.lan.kkasbi.in` |
+| Logs (Agni) | `https://logs2.lan.kkasbi.in` |
 
 ---
 
@@ -71,7 +69,7 @@
 
 | From | To | Path |
 |------|----|------|
-| Home LAN | Service | DNS → 192.168.1.200 (Agni primary) → Caddy → Service |
+| Home LAN | Service | DNS → 192.168.0.100/200 → Caddy → Service |
 | Remote (Public) | Service | Cloudflare → Tunnel → Agni → Caddy → Service |
 | Remote (VPN) | Service | Tailscale → P2P → Caddy → Service |
 | Service to Service | Backend | Docker network (kry_net) |
@@ -83,14 +81,11 @@
 ### Check DNS Resolution
 
 ```bash
-# From LAN — should return local IP (queries Agni primary DNS)
-nslookup photos.example.com 192.168.1.200
-
-# From LAN — should also work via Prime secondary DNS
-nslookup photos.example.com 192.168.1.100
+# From LAN (should return local IP)
+nslookup photos.krynet.cc 192.168.0.200
 
 # From external (should return Cloudflare IP)
-nslookup photos.example.com 1.1.1.1
+nslookup photos.krynet.cc 1.1.1.1
 ```
 
 ### Restart Reverse Proxy
@@ -126,29 +121,27 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 ## 📊 Key Ports
 
-### Agni (192.168.1.200) — Network Core
+### Agni (192.168.0.200)
 
 | Port | Service |
 |------|---------|
-| 53 | AdGuard DNS (Primary) |
+| 53 | AdGuard DNS |
 | 80/443 | Caddy |
 | 3000 | Grafana |
 | 3001 | Gatus |
-| 8082 | AdGuard Home Sync |
 | 8123 | Home Assistant |
 | 9090 | Prometheus |
 
-### Prime (192.168.1.100) — Storage Hub
+### Prime (192.168.0.100)
 
 | Port | Service |
 |------|---------|
-| 53 | AdGuard DNS (Secondary) |
+| 53 | AdGuard DNS |
 | 88 | TrueNAS UI |
 | 2283 | Immich |
 | 8096 | Jellyfin |
 | 8989 | Sonarr |
 | 7878 | Radarr |
-| 13378 | Audiobookshelf |
 
 ---
 
@@ -157,7 +150,7 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ### Service Not Reachable
 
 1. **Check Caddy:** `docker logs caddy`
-2. **Check DNS:** `nslookup <domain> 192.168.1.200` (primary on Agni)
+2. **Check DNS:** `nslookup <domain> 192.168.0.200`
 3. **Check container:** `docker ps | grep <service>`
 
 ### Slow Tunnel Performance
@@ -168,10 +161,9 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 ### DNS Not Working
 
-1. Check AdGuard on Agni (primary): `docker ps | grep adguard`
-2. Check AdGuard on Prime (secondary): same command on Prime
-3. Verify router DHCP DNS settings point to Agni (192.168.1.200) and Prime (192.168.1.100)
-4. Check AdGuard Home Sync status on Agni: `docker logs adguardhome-sync --tail 20`
+1. Check AdGuard: `docker ps | grep adguard`
+2. Verify router DHCP DNS settings
+3. Check AdGuard Sync status
 
 ---
 
@@ -180,9 +172,8 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 | File | Path | Server |
 |------|------|--------|
 | Caddyfile | `/home/agni/apps/docker/caddy/Caddyfile` | Agni |
-| AdGuard Config (Primary) | `/home/agni/apps/docker/adguard/conf/` | Agni |
-| AdGuard Sync Config | `/home/agni/apps/docker/adguard-sync/` | Agni |
-| AdGuard Config (Secondary) | `/mnt/orion/apps-config/adguardhome/conf/` | Prime |
+| AdGuard Config | `/home/agni/apps/docker/adguard/conf/` | Agni |
+| AdGuard Config | `/mnt/orion/apps-config/adguardhome/conf/` | Prime |
 | Prometheus | `/home/agni/apps/docker/prometheus/config/` | Agni |
 
 ---
@@ -191,8 +182,9 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 | Document | Description |
 |----------|-------------|
-| [AGNI-SERVER.md](AGNI-SERVER.md) | Agni server documentation (Network Core) |
-| [PRIME-SERVER.md](PRIME-SERVER.md) | Prime server documentation (Storage Hub) |
+| [networking.md](networking.md) | Complete networking deep dive |
+| [AGNI-SERVER.md](AGNI-SERVER.md) | Agni server documentation |
+| [PRIME-SERVER.md](PRIME-SERVER.md) | Prime server documentation |
 
 ---
 

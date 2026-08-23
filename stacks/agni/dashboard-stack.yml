@@ -6,13 +6,13 @@ services:
     restart: unless-stopped
     volumes:
       # FIXED: Points to the root folder where your services.yaml lives
-      - ${DOCKER_CONFIG_PATH}/homepage:/app/config
+      - /home/agni/apps/docker/homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${DOCKER_CONFIG_PATH}/homepage/images:/app/public/images
+      - /home/agni/apps/docker/homepage/images:/app/public/images
     environment:
       - TZ=Asia/Kolkata
 
-      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS:-home.example.com,home.internal.home,127.0.0.1}
+      - HOMEPAGE_ALLOWED_HOSTS=home.krynet.cc,home.lan.kkasbi.in,127.0.0.1,192.168.0.200,192.168.0.100
     ports:
       - "3075:3000"
     networks:

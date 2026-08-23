@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  freshrss:
+    image: ghcr.io/linuxserver/freshrss:latest
+    container_name: freshrss
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/freshrss:/config
+    ports:
+      # Port 8086 is for optional local access, Traefik will handle 443
+      - "8086:80"
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

@@ -1,0 +1,39 @@
+services:
+  jellystat-db:
+    image: postgres:15-alpine
+    container_name: jellystat-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jellystat
+      POSTGRES_USER: jellystat
+      POSTGRES_PASSWORD: ${JELLYSTAT_DB_PASSWORD:-jellystat_secure_password_2026}
+    volumes:
+      - /mnt/orion/apps-config/jellystat/db:/var/lib/postgresql/data
+    networks:
+      - kry_net
+
+  jellystat:
+    image: cyfershepard/jellystat:latest
+    container_name: jellystat
+    restart: unless-stopped
+    depends_on:
+      - jellystat-db
+    environment:
+      - POSTGRES_IP=jellystat-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=jellystat
+      - POSTGRES_USER=jellystat
+      - POSTGRES_PASSWORD=${JELLYSTAT_DB_PASSWORD:-jellystat_secure_password_2026}
+      - JWT_SECRET=${JELLYSTAT_JWT_SECRET:-jellystat_jwt_secret_key_krynet_2026}
+      - TZ=Asia/Kolkata
+    ports:
+      - "3005:3000"
+    networks:
+      - kry_net
+      - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

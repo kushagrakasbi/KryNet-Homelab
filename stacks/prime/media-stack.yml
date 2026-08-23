@@ -26,7 +26,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - FIREWALL_OUTBOUND_SUBNETS=${LAN_SUBNET:-192.168.1.0/24},172.16.3.0/24 # Adjust to your network
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/24,172.16.3.0/24 # Adjust to your network
       - FIREWALL_INPUT_PORTS=8080,6881,8081,8191,5055,6969 # Ports for services
       - VPN_SERVICE_PROVIDER=surfshark
       - VPN_TYPE=wireguard
@@ -201,7 +201,7 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL:-media.example.com}
+      - JELLYFIN_PublishedServerUrl=media.krynet.cc
     devices:
       - /dev/dri:/dev/dri
     restart: unless-stopped
@@ -310,6 +310,8 @@ services:
       - ${DOCKER_CONFIG_PATH}/temp:/temp # Your transcode cache
     deploy:
       resources:
+        limits:
+          memory: 4G
         reservations:
           devices:
             - driver: nvidia

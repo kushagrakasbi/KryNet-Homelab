@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing
+    hostname: syncthing-truenas
+    env_file:
+      - stack.env
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      # This is for Syncthing's own configuration
+      - ${DOCKER_CONFIG_PATH}/syncthing:/config
+      
+      # --- ADD THESE VOLUMES ---
+      # 1. Your existing sync folder
+      - ${ANDROMEDA_CONFIG_PATH}/sync:/data/sync
+      # 2. Your TrueNAS config folder (MOUNTED READ-ONLY)
+      - ${DOCKER_CONFIG_PATH}:/data/truenas-config-backup:ro
+      # 3. A new folder to store the backup FROM Legion
+      - ${ANDROMEDA_CONFIG_PATH}/sync/legion-backup:/data/legion-backup
+      
+    ports:
+      - "8384:8384"
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

@@ -1,0 +1,54 @@
+DISABLED Stack
+version: "3.8"
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+
+    ports:
+      - "4000:4000"
+    environment:
+      # MODIFIED: Use your server IP and the exposed port for the Immich DB
+      # Use a separate DB named "litellm" on the same server
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASS}@192.168.0.100:5432/litellm
+      - STORE_MODEL_IN_DB=True
+      - PUID=${PUID} # Added for consistency
+      - PGID=${PGID} # Added for consistency
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+    env_file:
+      - stack.env
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 http://192.168.0.100:4000/health/liveliness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    env_file:
+      - stack.env
+    ports:
+      - "3999:8080"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/openwebui:/app/backend/data # MODIFIED
+    environment:
+      - PUID=${PUID} # Added for consistency
+      - PGID=${PGID} # Added for consistency
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true

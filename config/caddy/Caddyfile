@@ -1,0 +1,316 @@
+{
+    email admin@example.com
+    # debug # Uncomment for detailed logs
+}
+
+# --- Snippets ---
+
+(cloudflare) {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        resolvers 1.1.1.1
+    }
+}
+
+# --- Wildcard Definition ---
+*.krynet.cc, *.lan.kkasbi.in {
+    import cloudflare
+    
+    # =========================================================
+    #  NEW: Resilient Monitoring Stack (Agni - Local)
+    # =========================================================
+
+    # Gatus (Status Page)
+    @gatus host status.krynet.cc status.lan.kkasbi.in
+    handle @gatus {
+        reverse_proxy http://127.0.0.1:3001
+    }
+
+    # Grafana (Dashboards)
+    @grafana host grafana.krynet.cc grafana.lan.kkasbi.in
+    handle @grafana {
+        reverse_proxy http://127.0.0.1:3000
+    }
+
+    # Gotify (Notifications)
+    @gotify host notify.krynet.cc notify.lan.kkasbi.in
+    handle @gotify {
+        reverse_proxy http://127.0.0.1:8089
+    }
+
+    # Healthchecks (Backup Monitoring)
+    @hc host hc.krynet.cc hc.lan.kkasbi.in
+    handle @hc {
+        reverse_proxy http://127.0.0.1:8000
+    }
+
+    # Prometheus (Moved to Agni - Master DB)
+    @prometheus host prom.krynet.cc prom.lan.kkasbi.in
+    handle @prometheus {
+        reverse_proxy http://127.0.0.1:9090
+    }
+
+    # =========================================================
+    #  Agni (Network Core - Local)
+    # =========================================================
+
+    # Homepage
+    @homepage host home.krynet.cc home.lan.kkasbi.in home.kkasbi.in
+    handle @homepage {
+        reverse_proxy http://127.0.0.1:3075
+    }
+
+    # AdGuard Home (Agni)
+    @adguard2 host adguard2.krynet.cc adguard2.lan.kkasbi.in
+    handle @adguard2 {
+        reverse_proxy http://127.0.0.1:7000
+    }
+
+    # AdGuard Home Sync (Agni)
+    @adsync host adsync.krynet.cc adsync.lan.kkasbi.in
+    handle @adsync {
+        reverse_proxy http://127.0.0.1:8082
+    }
+
+    # Home Assistant (Agni)
+    @ha host ha.krynet.cc ha.lan.kkasbi.in
+    handle @ha {
+        reverse_proxy http://127.0.0.1:8123
+    }
+
+    # Portainer (Agni)
+    @portainer2 host portainer2.krynet.cc portainer2.lan.kkasbi.in
+    handle @portainer2 {
+        reverse_proxy https://127.0.0.1:9443 {
+            transport http {
+                tls_insecure_skip_verify
+            }
+        }
+    }
+
+    # Dozzle Logs (Agni)
+    @dozzle2 host logs2.krynet.cc logs2.lan.kkasbi.in
+    handle @dozzle2 {
+        reverse_proxy http://127.0.0.1:8088
+    }
+
+    # OpenSpeedTest (Agni)
+    @ospt2 host ospt2.krynet.cc ospt2.lan.kkasbi.in
+    handle @ospt2 {
+        reverse_proxy http://127.0.0.1:8092
+    }
+    
+    # cAdvisor (Agni)
+    @cadvisor2 host cadvisor2.krynet.cc cadvisor2.lan.kkasbi.in
+    handle @cadvisor2 {
+        reverse_proxy http://127.0.0.1:8087
+    }
+
+    # Copyparty (Agni)
+    @file host file.krynet.cc file.lan.kkasbi.in
+    handle @file {
+        reverse_proxy http://127.0.0.1:3923
+    }
+
+    # Vaultwarden (Agni)
+    @vault host vault.krynet.cc vault.lan.kkasbi.in
+    handle @vault {
+        reverse_proxy http://127.0.0.1:8222
+    }
+
+    # =========================================================
+    #  Prime (TrueNAS - Remote 192.168.0.100)
+    # =========================================================
+
+    # TrueNAS UI
+    @truenas host server.krynet.cc server.lan.kkasbi.in
+    handle @truenas {
+        reverse_proxy http://192.168.0.100:88
+    }
+    
+    # Adguard Home (Prime)
+    @adguard host adguard.krynet.cc adguard.lan.kkasbi.in
+    handle @adguard {
+        reverse_proxy http://192.168.0.100:7000
+    }
+
+    # Portainer (Prime)
+    @portainer host portainer.krynet.cc portainer.lan.kkasbi.in
+    handle @portainer {
+        reverse_proxy https://192.168.0.100:9443 {
+            transport http {
+                tls_insecure_skip_verify
+            }
+        }
+    }
+
+    # =========================================================
+    #  Legion (AI, GPU & Compute Hub - Remote 192.168.0.150)
+    # =========================================================
+
+    # OpenWebUI (Chat Interface)
+    @ow host ow.krynet.cc ow.lan.kkasbi.in
+    handle @ow {
+        reverse_proxy http://192.168.0.150:3999
+    }
+
+    # LiteLLM (Unified AI Gateway)
+    @litellm host litellm.krynet.cc litellm.lan.kkasbi.in
+    handle @litellm {
+        reverse_proxy http://192.168.0.150:4000
+    }
+
+    # Ollama API
+    @ollama host ollama.krynet.cc ollama.lan.kkasbi.in
+    handle @ollama {
+        reverse_proxy http://192.168.0.150:11434
+    }
+
+    # Dozzle Logs (Legion)
+    @dozzle3 host logs3.krynet.cc logs3.lan.kkasbi.in
+    handle @dozzle3 {
+        reverse_proxy http://192.168.0.150:8088
+    }
+
+    # =========================================================
+    #  Prime (TrueNAS - Remote 192.168.0.100)
+    # =========================================================
+
+    # Homarr (Prime)
+    @homarr host dash.krynet.cc dash.kkasbi.in dash.lan.kkasbi.in
+    handle @homarr {
+        reverse_proxy http://192.168.0.100:7575
+    }
+
+    # Immich (Prime)
+    @immich host photos.krynet.cc photos.kkasbi.in photos.lan.kkasbi.in
+    handle @immich {
+        reverse_proxy http://192.168.0.100:2283
+    }
+
+    # Immich Power Tools (Prime)
+    @ipt host ipt.krynet.cc ipt.lan.kkasbi.in
+    handle @ipt {
+        reverse_proxy http://192.168.0.100:8001
+    }
+
+    # qBittorrent via Gluetun (Prime)
+    @qbittorrent host qb.krynet.cc qb.lan.kkasbi.in
+    handle @qbittorrent {
+        reverse_proxy http://192.168.0.100:8080
+    }
+
+    # Jellyseerr via Gluetun (Prime)
+    @jellyseerr host request.krynet.cc request.lan.kkasbi.in request.kkasbi.in
+    handle @jellyseerr {
+        reverse_proxy http://192.168.0.100:5055
+    }
+
+    # Whisparr via Gluetun (Prime)
+    @whisparr host whisparr.krynet.cc whisparr.lan.kkasbi.in
+    handle @whisparr {
+        reverse_proxy http://192.168.0.100:6969
+    }
+
+    # SABnzbd (Prime)
+    @sabnzbd host nzb.krynet.cc nzb.kkasbi.in nzb.lan.kkasbi.in
+    handle @sabnzbd {
+        reverse_proxy http://192.168.0.100:8085
+    }
+
+    # FlareSolverr (Prime)
+    @flaresolverr host flare.krynet.cc flare.lan.kkasbi.in
+    handle @flaresolverr {
+        reverse_proxy http://192.168.0.100:8191
+    }
+
+    # Prowlarr (Prime)
+    @prowlarr host indexer.krynet.cc indexer.lan.kkasbi.in
+    handle @prowlarr {
+        reverse_proxy http://192.168.0.100:9696
+    }
+
+    # Sonarr (Prime)
+    @sonarr host sonarr.krynet.cc sonarr.lan.kkasbi.in
+    handle @sonarr {
+        reverse_proxy http://192.168.0.100:8989
+    }
+
+    # Radarr (Prime)
+    @radarr host radarr.krynet.cc radarr.lan.kkasbi.in
+    handle @radarr {
+        reverse_proxy http://192.168.0.100:7878
+    }
+
+    # Bazarr (Prime)
+    @bazarr host bazarr.krynet.cc bazarr.lan.kkasbi.in
+    handle @bazarr {
+        reverse_proxy http://192.168.0.100:6767
+    }
+
+    # Jellyfin (Prime)
+    @jellyfin host media.krynet.cc media.kkasbi.in media.lan.kkasbi.in
+    handle @jellyfin {
+        reverse_proxy http://192.168.0.100:8096
+    }
+
+    # Jellystat Analytics (Prime)
+    @jellystat host jellystat.krynet.cc jellystat.lan.kkasbi.in stats.krynet.cc stats.lan.kkasbi.in
+    handle @jellystat {
+        reverse_proxy http://192.168.0.100:3005
+    }
+
+    # Dozzle Logs (Prime)
+    @dozzle host logs.krynet.cc logs.lan.kkasbi.in
+    handle @dozzle {
+        reverse_proxy http://192.168.0.100:8088
+    }
+
+    # Speedtest Tracker (Prime)
+    @speedtest host speed.krynet.cc speed.lan.kkasbi.in
+    handle @speedtest {
+        reverse_proxy http://192.168.0.100:8093
+    }
+
+    # TDarr (Prime)
+    @tdarr host tdarr.krynet.cc tdarr.lan.kkasbi.in
+    handle @tdarr {
+        reverse_proxy http://192.168.0.100:8265
+    }
+    
+    # OpenSpeedTest (Prime)
+    @ospt host ospt.krynet.cc ospt.lan.kkasbi.in
+    handle @ospt {
+        reverse_proxy http://192.168.0.100:8992
+    }
+    
+    # Audiobookshelf
+    @abs host abs.krynet.cc abs.lan.kkasbi.in
+    handle @abs {
+        reverse_proxy http://192.168.0.100:13378
+    }
+
+    # FreshRSS (Prime)
+    @rss host rss.krynet.cc rss.lan.kkasbi.in
+    handle @rss {
+        reverse_proxy http://192.168.0.100:8086
+    }
+
+    # Paperless-NGX (Prime)
+    @paperless host docs.krynet.cc docs.lan.kkasbi.in
+    handle @paperless {
+        reverse_proxy http://192.168.0.100:8089
+    }
+
+    # --- DEPRECATED / REMOVED ---
+    # Uptime Kuma (Replaced by Gatus)
+    # @uptimekuma host monitor.krynet.cc monitor.lan.kkasbi.in
+    # handle @uptimekuma {
+    #     reverse_proxy http://192.168.0.100:3001
+    # }
+    
+    # Fallback for unmatched hosts
+    handle {
+        abort
+    }
+}

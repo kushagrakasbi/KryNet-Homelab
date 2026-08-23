@@ -21,5 +21,5 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-    privileged: true
+    # privileged: true
     restart: unless-stopped

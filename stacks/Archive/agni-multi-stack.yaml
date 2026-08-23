@@ -1,0 +1,222 @@
+
+# ADGUARDHOME STACK
+version: "3.8"
+
+services:
+  adguardhome: # Renamed service for clarity
+    image: adguard/adguardhome:latest
+    container_name: adguardhome # Renamed container for clarity
+    ports:
+      # --- DNS Ports ---
+      # Check if port 53 is free on host! If not, change to e.g., "5353:53/tcp"
+      - "53:53/tcp"
+      - "53:53/udp"
+
+      # --- UI & Setup Ports (DIFFERENT from primary) ---
+      # Admin Panel UI - Changed to 7002 to avoid conflict with primary (7000)
+      - "7000:80/tcp"
+      # Initial Setup - Changed to 7003 to avoid conflict with primary (7001)
+      - "7001:3000/tcp"
+
+      # --- Encrypted DNS Ports (DIFFERENT from primary) ---
+      # DoH (DNS-over-HTTPS) - Changed to 8444
+      - "8444:443/tcp"
+      - "8444:443/udp"
+      # DoT (DNS-over-TLS) - Changed to 854
+      - "854:853/tcp"
+      # DoQ (DNS-over-QUIC) - Changed ports
+      - "785:784/udp"
+      - "8854:8853/udp"
+
+    volumes:
+      # Use absolute paths on the Ubuntu laptop
+      - /home/agni/apps/docker/adguard/work:/opt/adguardhome/work
+      - /home/agni/apps/docker/adguard/conf:/opt/adguardhome/conf
+    environment:
+      # PUID/PGID are not typically used by AdGuard Home
+      - TZ=${TZ:-Asia/Kolkata} # Set Timezone (replace if needed, or define TZ in .env)
+    restart: unless-stopped
+    networks:
+      - agni_net # Connect to the network created for Portainer
+
+  # Adguard Home Sync Service
+  adguardhome-sync:
+    image: lscr.io/linuxserver/adguardhome-sync:latest
+    container_name: adguardhome-sync
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      # Path to config file inside container
+      - CONFIGFILE=/config/adguardhome-sync.yaml
+    volumes:
+      # Mount the config directory
+      - /home/agni/apps/docker/adguard-sync:/config
+    ports:
+      # Web UI for monitoring sync
+      - "8082:8080"
+    restart: unless-stopped
+    networks:
+      - agni_net
+
+networks:
+  agni_net:
+    external: true
+
+
+version: "3.8"
+
+# KryNet-Agni Stack (Network Core)
+# Node: 192.168.0.200
+
+services:
+  # ============================================
+  # Caddy - Reverse Proxy with Cloudflare DNS
+  # ============================================
+  caddy:
+    image: caddy-cloudflare:local
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /home/agni/apps/docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - /home/agni/apps/docker/caddy/data:/data
+      - /home/agni/apps/docker/caddy/config:/config
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - ACME_AGREE=true
+
+
+# Homeassistant Stack (Disabled) (Need to enable it here in Agni)
+version: "3.8"
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    env_file:
+      - stack.env
+    # Use host networking for auto-discovery of devices on your LAN
+    network_mode: host
+    volumes:
+      # Path for Home Assistant's configuration files
+      - ${DOCKER_CONFIG_PATH}/ha/config:/config
+      # Sync time with the host system
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+    # If you add Zigbee/Z-Wave USB sticks, uncomment the devices section
+    # devices:
+    #   - /dev/ttyACM0:/dev/ttyACM0
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    privileged: true
+    restart: unless-stopped
+
+
+# Speedtest Stack
+version: "3.8"
+
+services:
+  speedtest:
+    image: openspeedtest/latest
+    container_name: openspeedtest
+    env_file:
+      - stack.env
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - ENABLE_LETSENCRYPT=False
+    ports:
+      # Exposing on 8092 to avoid any conflicts
+      - '8092:3000'
+      - '8093:3001'
+    networks:
+      - agni_net
+    restart: unless-stopped
+
+networks:
+  agni_net:
+    external: true
+
+# Syncthing Stack (DISABLED)
+version: '3.8'
+
+services:
+  syncthing-legion:
+    image: lscr.io/linuxserver/syncthing:latest
+    container_name: syncthing-legion
+    hostname: syncthing-legion
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ:-Asia/Kolkata}
+    volumes:
+      # Config path on your Legion server
+      - /home/agni/apps/syncthing/config:/config
+      
+      # --- ADD THESE VOLUMES ---
+      # 1. Your existing sync folder
+      - /home/agni/apps/syncthing/data:/data/sync
+      # 2. Your Legion apps folder (MOUNTED READ-ONLY)
+      - /home/agni/apps:/data/legion-apps-backup:ro
+      # 3. A new folder to store the backup FROM TrueNAS
+      - /home/agni/apps/syncthing/data/truenas-backup:/data/truenas-backup
+      
+    ports:
+      - "8384:8384"
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+      - "21027:21027/udp"
+    networks:
+      - agni_net
+
+networks:
+  agni_net:
+    external: true
+
+
+# Tailscale Stack
+version: '3.8'
+
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-agni # Unique container name
+    restart: unless-stopped
+    network_mode: host          # Required for Tailscale to manage the host network
+    cap_add:                   # Required capabilities
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      # Use the path on your Ubuntu laptop for persistent state
+      - /home/agni/apps/docker/tailscale:/var/lib/tailscale
+      # Mount the TUN device needed for VPN connections
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      # --- IMPORTANT: Use a new Reusable Auth Key ---
+      # Get one from Tailscale Admin Console -> Settings -> Keys -> Auth Keys
+      # Make sure it's Reusable!
+      - TS_AUTHKEY=${TS_AUTHKEY}
+
+      # --- Hostname ---
+      # Set a unique hostname for this node in the Tailscale admin panel
+      - TS_HOSTNAME=agni-server
+
+      # --- State Directory ---
+      # Explicitly define the state directory inside the container
+      - TS_STATE_DIR=/var/lib/tailscale
+
+      # --- DO NOT INCLUDE THESE ---
+      # Your TrueNAS server handles routing and exit node functionality.
+      # Including them here would cause conflicts.
+      # - TS_ROUTES=192.168.0.0/24
+      - TS_EXTRA_ARGS=--advertise-exit-node --advertise-routes=192.168.0.0/24
+
+      # Optional: Add tags for ACLs if needed
+      # - TS_TAGS=tag:server,tag:laptop
+
+    # TS_USERSPACE=false is generally the default and not needed unless debugging specific issues.

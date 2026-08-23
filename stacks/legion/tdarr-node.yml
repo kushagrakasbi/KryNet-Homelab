@@ -1,0 +1,34 @@
+services:
+  tdarr-node-legion:
+    image: ghcr.io/haveagitgat/tdarr_node:latest
+    container_name: tdarr-node-legion
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Kolkata
+      - nodeID=LegionNode-RTX3060
+      - nodeName=LegionNode-RTX3060
+      - serverIP=192.168.0.100
+      - serverPort=8266
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    volumes:
+      - /home/legion/apps/docker/tdarr/configs:/app/configs
+      - /home/legion/apps/docker/tdarr/logs:/app/logs
+      - /mnt/prime-media:/data                   # NFS mount from Prime (/mnt/orion/data)
+      - /home/legion/apps/docker/tdarr/temp:/temp # Fast local NVMe cache for active transcodes
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - legion_net
+
+networks:
+  legion_net:
+    name: legion_net
+    external: true

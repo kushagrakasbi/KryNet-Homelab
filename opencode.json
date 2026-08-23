@@ -1,0 +1,41 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "litellm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "KryNet LiteLLM Gateway",
+      "options": {
+        "baseURL": "http://192.168.0.150:4000/v1"
+      },
+      "models": {
+        "qwen2.5-coder": {
+          "name": "Qwen 2.5 Coder (Local GPU)"
+        },
+        "deepseek-r1": {
+          "name": "DeepSeek R1 7B (Local Reasoning)"
+        },
+        "gemini-3-flash": {
+          "name": "Gemini 3 Flash (Google AI Cloud)"
+        },
+        "claude-opus-4.6": {
+          "name": "Claude Opus 4.6 (Anthropic Cloud)"
+        }
+      }
+    },
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (Legion RTX 3060)",
+      "options": {
+        "baseURL": "http://192.168.0.150:11434/v1"
+      },
+      "models": {
+        "qwen2.5-coder:7b": {
+          "name": "Qwen 2.5 Coder 7B (Local)"
+        },
+        "deepseek-r1:7b": {
+          "name": "DeepSeek R1 7B (Local)"
+        }
+      }
+    }
+  }
+}

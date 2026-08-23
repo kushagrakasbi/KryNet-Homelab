@@ -1,0 +1,62 @@
+services:
+  # --- LiteLLM API Gateway ---
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/litellm/config.yaml:/app/config.yaml
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASS}@immich_postgres:5432/litellm
+      - STORE_MODEL_IN_DB=True
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    env_file:
+      - stack.env
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveness')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - kry_net
+      - traefik_proxy
+
+  # --- Chat Interface ---
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    restart: unless-stopped
+    ports:
+      - "3999:8080"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/openwebui:/app/backend/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - WEBUI_AUTH=true
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+    env_file:
+      - stack.env
+    depends_on:
+      - litellm
+    networks:
+      - kry_net
+      - traefik_proxy
+
+networks:
+  kry_net:
+    external: true
+  traefik_proxy:
+    external: true
