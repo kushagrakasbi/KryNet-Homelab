@@ -98,6 +98,7 @@ docker start paperless-redis paperless-ngx
 ```bash
 ssh agni
 docker stop vaultwarden
-docker exec backup-agni rclone sync pcloud:Backups/Krynet-Agni/vaultwarden /data/vaultwarden --config /config/rclone.conf
+# Use host rclone or run one-off writable restore container:
+rclone sync pcloud:Backups/Krynet-Agni/vaultwarden /home/agni/apps/docker/vaultwarden --config /home/agni/apps/docker/rclone/rclone.conf
 docker start vaultwarden
 ```
