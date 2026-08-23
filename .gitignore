@@ -1,1 +1,43 @@
+# OS Artifacts
 .DS_Store
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Environment & Secrets (CRITICAL)
+.env
+*.env
+stack.env
+*.env.*
+*.env.local
+!*.env.example
+!.env.example
+
+# Credentials & Keys
+*.key
+*.pem
+*.crt
+*.pfx
+rclone.conf
+
+# Database & Backups
+*.sql
+*.sql.gz
+*.dump
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.bak
+*.backup
+*.tar.gz
+
+# IDE & Editor
+.idea/
+.vscode/
+*.swp
+*~
+
+# Antigravity CLI
+.antigravitycli

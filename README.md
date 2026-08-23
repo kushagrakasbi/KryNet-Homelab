@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Control_Plane-Agentic_AI_(OpenCode_/_Antigravity)-8A2BE2?style=for-the-badge&logo=robot" alt="Agentic AI"/>
 </p>
 
-A production-grade, distributed private cloud and local AI compute ecosystem serving a multi-user household. This repository documents the hardware, software, zero-trust networking, container architecture, and autonomous AI agent operations of a self-hosted infrastructure engineered to match commercial cloud reliability while ensuring 100% data sovereignty.
+A production-grade, distributed private cloud and local AI compute ecosystem serving a multi-user household. This repository documents the complete hardware, software, zero-trust networking, container architecture, and autonomous AI agent operations of a self-hosted infrastructure engineered to match commercial cloud reliability while ensuring 100% data sovereignty.
 
 ---
 
@@ -24,8 +24,11 @@ A production-grade, distributed private cloud and local AI compute ecosystem ser
 | [**⚡ Legion Server Manual**](docs/LEGION-SERVER.md) | AI & GPU Supernode, RTX 3060 CUDA, Ollama, LiteLLM Gateway, OpenWebUI, Tdarr Node |
 | [**🤖 AI Stack Architecture**](docs/AI-STACK.md) | Local LLM inference, remote Immich ML acceleration, and LiteLLM agent proxy |
 | [**🔒 Zero-Trust Networking**](docs/networking.md) | Tailscale mesh, Split-Horizon DNS, Cloudflare DNS-01 SSL, 0 open public ports |
+| [**📦 Full Service Matrix**](docs/services.md) | Comprehensive 45+ container catalog, port mappings, and health checks |
 | [**🚑 Operations Playbook**](docs/OPERATIONS-PLAYBOOK.md) | 3-2-1 backup verification, ZFS snapshots, and end-to-end database disaster recovery |
 | [**🤖 Agent Operating Guide**](AGENTS.md) | AI agent directives, skills portfolio, Portainer API tooling, and branching lifecycle |
+| [**🏗️ Redesign Blueprint**](docs/HOME-SERVER-REDESIGN.md) | Historical 3-node architectural overhaul and migration strategy |
+| [**📈 Execution Progress**](docs/REDESIGN-PROGRESS.md) | Completed migration milestones, task checklists, and verification log |
 
 ---
 
@@ -51,6 +54,16 @@ KryNet decouples compute, storage, and networking across three dedicated physica
 │ • Portainer Server (Master)   │ • Portainer Instance (TrueNAS)  │ • Portainer Agent Endpoint    │
 └───────────────────────────────┴─────────────────────────────────┴───────────────────────────────┘
 ```
+
+---
+
+## 🖥️ Hardware Infrastructure Matrix
+
+| Node | Form Factor | CPU | RAM | Primary Storage | Secondary Storage | GPU / Accelerator |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **🔥 Agni** | Mini PC | Intel 12th Gen N100 (4C/4T) | 16GB DDR4 3200MHz | 512GB NVMe M.2 SSD | External NVMe Scratch | Intel UHD Graphics (QuickSync) |
+| **🌟 Prime** | Custom Tower | Intel Core i5 (4C/4T @ 3.8GHz) | 32GB DDR4 Non-ECC | 512GB NVMe (Boot/Apps) | 2x 6TB WD Red Plus (ZFS Mirror) | Intel HD Graphics 630 |
+| **⚡ Legion** | Laptop Server | Intel Core i7-12700H (14C/20T) | 16GB DDR5 4800MHz | 1TB Samsung 980 Pro NVMe | NFS Share from Prime (`/data`) | NVIDIA GeForce RTX 3060 6GB GDDR6 |
 
 ---
 
@@ -118,13 +131,45 @@ KryNet enforces a strict **Zero Open WAN Ports** security posture. No ports are 
 
 ---
 
-## 📊 Observability & Multi-Platform Alerting
+## 📦 Complete Categorized Service Catalog
 
-* **Prometheus Master DB:** Aggregates metrics from Agni (`node-exporter`, `cadvisor`), Prime (`node-exporter`, `cadvisor`), and Legion (`node-exporter`, `cadvisor`, `nvidia_gpu_exporter:9835`).
-* **Grafana Provisioning:** Automated datasource provisioning and pre-built production dashboards:
-  * **`KryNet 3-Node Fleet Overview`**: Real-time CPU, RAM, Disk, and Network bandwidth.
-  * **`Legion RTX 3060 GPU & AI Metrics`**: Real-time GPU temperature, compute %, VRAM usage, and power draw.
-* **Gatus Health Probes & Discord Webhook (`#fleet-alerts`):** 38+ health checks probe every fleet endpoint every 30s–2m, routing instantaneous incident and recovery notifications to Discord and Gotify.
+| Category | Service | Node | Port | Ingress URL | Purpose |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Ingress & DNS** | **Caddy** | Agni | 80/443 | `*.krynet.cc` | Ingress Reverse Proxy & Wildcard TLS |
+| | **AdGuard Home (Primary)** | Agni | 53/7000 | `adguard2.krynet.cc` | DNS Filtering & Split-Horizon Rewrites |
+| | **AdGuard Home (Replica)** | Prime | 53/7000 | `adguard.krynet.cc` | Secondary Redundant DNS Server |
+| | **AdGuard Home Sync** | Agni | 8082 | `adsync.krynet.cc` | Automatic Bi-directional DNS Sync |
+| **AI & Compute** | **Ollama (CUDA)** | Legion | 11434 | N/A (Internal) | Local LLM Engine (Qwen / DeepSeek) |
+| | **LiteLLM Gateway** | Legion | 4000 | `litellm.krynet.cc` | Universal OpenAI-Compatible API Proxy |
+| | **OpenWebUI** | Legion | 3999 | `ow.krynet.cc` | Feature-Rich AI Chat & Agent Canvas |
+| | **Immich ML Node** | Legion | 3003 | N/A (Worker) | Remote CUDA Image Embedding & Facial Recognition |
+| | **Tdarr Transcode Node** | Legion | N/A | N/A (Worker) | Hardware NVENC Video Transcoding Worker |
+| **Media & Photos** | **Immich Server (v3.1)** | Prime | 2283 | `photos.krynet.cc` | High-Performance Self-Hosted Photo Management |
+| | **PostgreSQL VectorChord** | Prime | 5432 | N/A (Internal) | 260K+ CLIP & Face Vector Index DB |
+| | **Jellyfin** | Prime | 8096 | `media.krynet.cc` | 4K HDR Media Streaming Server |
+| | **Jellystat** | Prime | 3005 | `jellystat.krynet.cc` | Jellyfin Viewing History & Analytics |
+| | **Audiobookshelf** | Prime | 13378 | `abs.krynet.cc` | Audiobooks & Podcasts Streaming |
+| **Automation** | **Sonarr** | Prime | 8989 | `sonarr.krynet.cc` | TV Series Management & Auto-Downloads |
+| | **Radarr** | Prime | 7878 | `radarr.krynet.cc` | Movie Library Management & Auto-Downloads |
+| | **Prowlarr** | Prime | 9696 | `indexer.krynet.cc` | Indexer Aggregator & Arr Sync |
+| | **Bazarr** | Prime | 6767 | `bazarr.krynet.cc` | Automated Subtitle Downloader |
+| | **Jellyseerr** | Prime | 5055 | `request.krynet.cc` | Media Discovery & Request Management |
+| | **Gluetun VPN** | Prime | 8080/5055 | N/A (Gateway) | Surfshark WireGuard Kill-Switch Gateway |
+| | **qBittorrent** | Prime | 8080 | `qbit.krynet.cc` | Torrent Client (Isolated through VPN) |
+| | **SABnzbd** | Prime | 8085 | `nzb.krynet.cc` | Usenet Downloader |
+| **Productivity** | **Vaultwarden** | Agni | 8222 | `vault.krynet.cc` | Bitwarden-Compatible Password Vault |
+| | **Home Assistant** | Agni | 8123 | `ha.krynet.cc` | Smart Home IoT Automation Hub |
+| | **Paperless-ngx** | Prime | 8089 | `paperless.krynet.cc` | Automated Document Archiving & OCR |
+| | **FreshRSS** | Prime | 8086 | `rss.krynet.cc` | Self-Hosted RSS Feed Aggregator |
+| | **Copyparty** | Agni | 3923 | `file.krynet.cc` | Resilient Web-Based File Server |
+| **Observability** | **Prometheus Master** | Agni | 9090 | `prom.krynet.cc` | Central Time-Series Metrics Database |
+| | **Grafana** | Agni | 3000 | `grafana.krynet.cc` | Production Fleet & GPU Dashboards |
+| | **Gatus** | Agni | 3001 | `status.krynet.cc` | 38+ Service Probes & Discord Webhook Alerts |
+| | **Healthchecks** | Agni | 8000 | `hc.krynet.cc` | 12-Hour Backup Cron Dead-Man's Switch |
+| | **Gotify** | Agni | 8089 | `notify.krynet.cc` | Push Notifications for Android / iOS |
+| | **NVIDIA GPU Exporter** | Legion | 9835 | N/A (Prometheus) | Real-time RTX 3060 Thermals & VRAM Metrics |
+| | **Homepage** | Agni | 3075 | `home.krynet.cc` | Master Unified Dashboard |
+| | **Homarr** | Prime | 7575 | `dash.krynet.cc` | Secondary Lightweight LAN Dashboard |
 
 ---
 
@@ -152,6 +197,44 @@ KryNet enforces a strict **Zero Open WAN Ports** security posture. No ports are 
 
 ---
 
+## 🚀 Quickstart: Reproducing & Deploying This Cluster
+
+### 1. Prerequisites
+* **Operating Systems:** Ubuntu Server 24.04/26.04 LTS (Agni/Legion), TrueNAS SCALE Dragonfish (Prime).
+* **Software:** Docker 26+, Docker Compose v2, NVIDIA Container Toolkit (for CUDA compute), Tailscale.
+* **Network:** Static local LAN IPs (`192.168.0.x`) and Tailscale mesh network configured.
+
+### 2. Setup Environment Files
+```bash
+# Clone the repository
+git clone https://github.com/kushagrakasbi/KryNet-Homelab.git && cd KryNet-Homelab
+
+# Configure environment variables from templates
+cp stacks/agni/.env.example stacks/agni/.env
+cp stacks/prime/.env.example stacks/prime/.env
+cp stacks/legion/.env.example stacks/legion/.env
+```
+
+### 3. Deploy Stacks via Portainer API Tooling
+```bash
+# Save your Portainer API tokens
+mkdir -p ~/.portainer
+echo "your_agni_token" > ~/.portainer/agni_token
+echo "your_prime_token" > ~/.portainer/prime_token
+
+# Deploy Ingress on Agni
+./scripts/portainer-helper.sh deploy agni caddy-stack stacks/agni/caddy-stack.yml
+
+# Deploy Storage & Media on Prime
+./scripts/portainer-helper.sh deploy prime immich stacks/prime/immich.yml
+./scripts/portainer-helper.sh deploy prime media-stack stacks/prime/media-stack.yml
+
+# Deploy AI Compute on Legion
+./scripts/portainer-helper.sh deploy legion ai-stack stacks/legion/ai-stack.yml
+```
+
+---
+
 ## 📁 Repository Directory Structure
 
 ```
@@ -175,6 +258,7 @@ KryNet enforces a strict **Zero Open WAN Ports** security posture. No ports are 
 │   ├── LEGION-SERVER.md        # Legion AI GPU node manual
 │   ├── AI-STACK.md             # Local LLM & Immich ML architecture
 │   ├── networking.md           # Zero-trust networking & DNS deep dive
+│   ├── services.md             # Complete service catalog and port reference
 │   ├── OPERATIONS-PLAYBOOK.md  # Disaster recovery runbooks & maintenance procedures
 │   └── plans/                  # Architectural roadmap & enhancement documents
 ├── scripts/                    # Autonomous Agent API Tooling

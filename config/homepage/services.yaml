@@ -99,7 +99,7 @@
           type: adguard
           url: http://192.168.0.200:7000
           username: "admin"
-          password: "GrafanaApple27!"
+          password: ""
 
     - AdGuard (Prime):
         icon: adguard-home.svg
@@ -111,7 +111,7 @@
           type: adguard
           url: http://192.168.0.100:7000
           username: "admin"
-          password: "GrafanaApple27!"
+          password: ""
 
     - AdGuard Sync:
         icon: sh-adguardhome-sync
@@ -150,8 +150,7 @@
             type: speedtest
             url: http://192.168.0.100:8093
             version: 1
-            key: 
-            bitratePrecision: 3
+            key: : 3
 
     - OpenSpeedTest (Agni):
         icon: openspeedtest.svg
@@ -297,7 +296,7 @@
         widget:
           type: jellyseerr
           url: http://192.168.0.100:5055
-          key: MTc1Nzg2NDQ1NjQ2NjNkODA4OTY2LWJkZmItNDJmYS1hZjk1LTY5NDE5YTk0MTMwMA==
+          key: 
 
     - Sonarr:
         icon: sonarr.svg
@@ -309,7 +308,7 @@
         widget:
           type: sonarr
           url: http://192.168.0.100:8989
-          key: 86993de53211468d8a99017c7e5aacdb
+          key: 
 
     - Radarr:
         icon: radarr.svg
@@ -321,7 +320,7 @@
         widget:
           type: radarr
           url: http://192.168.0.100:7878
-          key: 1d945b2e8a6847a588caadcd09f30039
+          key: 
 
     - Bazarr:
         icon: bazarr.svg
@@ -341,7 +340,7 @@
         widget:
             type: prowlarr
             url: http://192.168.0.100:9696
-            key: d57714dfa56b409eb085708cb66fc191
+            key: 
 
     - FlareSolverr:
         icon: sh-flaresolverr
@@ -363,7 +362,7 @@
           type: qbittorrent
           url: http://192.168.0.100:8080
           username: "admin"
-          password: "EnvoyGRPC27!"
+          password: ""
 
     - SABnzbd:
         icon: sabnzbd.svg
@@ -375,4 +374,4 @@
         widget:
             type: sabnzbd
             url: http://192.168.0.100:8085
-            key: 56493e618b2d419eb86d87a97b3d8c21
+            key: 
