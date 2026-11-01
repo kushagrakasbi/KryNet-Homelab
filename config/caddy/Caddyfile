@@ -290,6 +290,12 @@
         reverse_proxy http://192.168.0.100:13378
     }
 
+    # Chaptarr (Audiobook & Book Automation - Prime)
+    @chaptarr host chaptarr.krynet.cc chaptarr.lan.kkasbi.in readarr.krynet.cc readarr.lan.kkasbi.in
+    handle @chaptarr {
+        reverse_proxy http://192.168.0.100:8789
+    }
+
     # FreshRSS (Prime)
     @rss host rss.krynet.cc rss.lan.kkasbi.in
     handle @rss {

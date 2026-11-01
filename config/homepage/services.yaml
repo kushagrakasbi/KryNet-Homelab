@@ -1,19 +1,59 @@
-# /home/agni/apps/docker/homepage/config/services.yaml
+- Media:
+    - Jellyfin:
+        icon: jellyfin.svg
+        href: https://media.lan.kkasbi.in
+        description: Media Server
+        ping: http://192.168.0.100:8096
+        server: docker
+        container: jellyfin
+        widget:
+          type: jellyfin
+          url: http://192.168.0.100:8096
+          key: {{HOMEPAGE_VAR_JELLYFIN_KEY}}
+          version: 2
+          enableBlocks: true
+          enableNowPlaying: true
+
+    - Immich:
+        icon: immich.svg
+        href: https://photos.lan.kkasbi.in
+        description: Photos & Memories
+        ping: http://192.168.0.100:2283
+        server: docker
+        container: immich_server
+        widget:
+          type: immich
+          url: http://192.168.0.100:2283
+          key: {{HOMEPAGE_VAR_IMMICH_KEY}}
+          version: 2
+
+    - Audiobookshelf:
+        icon: sh-audiobookshelf
+        href: https://abs.lan.kkasbi.in
+        description: Audiobooks and Podcasts
+        ping: http://192.168.0.100:13378
+        server: docker
+        container: audiobookshelf
+        widget:
+            type: audiobookshelf
+            url: http://192.168.0.100:13378
+            key: {{HOMEPAGE_VAR_AUDIOBOOKSHELF_KEY}}
+
 
 - Core Infrastructure:
     - TrueNAS Scale:
         icon: truenas.svg
-        href: https://server.krynet.cc
+        href: https://server.lan.kkasbi.in
         description: Prime NAS OS
         ping: http://192.168.0.100:88
         widget:
           type: truenas
           url: https://192.168.0.100:444
-          key: 
+          key: {{HOMEPAGE_VAR_TRUENAS_SCALE_KEY}}
 
     - Portainer (Agni):
         icon: portainer.svg
-        href: https://portainer2.krynet.cc
+        href: https://portainer2.lan.kkasbi.in
         description: Agni Docker Mgmt
         ping: https://192.168.0.200:9443
         server: agni
@@ -22,11 +62,11 @@
           type: portainer
           url: https://192.168.0.200:9443
           env: 4
-          key: 
+          key: {{HOMEPAGE_VAR_PORTAINER_AGNI_KEY}}
 
     - Portainer (Prime):
         icon: portainer.svg
-        href: https://portainer.krynet.cc
+        href: https://portainer.lan.kkasbi.in
         description: Prime Docker Mgmt
         ping: https://192.168.0.100:9443
         server: docker
@@ -35,11 +75,11 @@
           type: portainer
           url: https://192.168.0.100:9443
           env: 2
-          key: 
+          key: {{HOMEPAGE_VAR_PORTAINER_PRIME_KEY}}
 
     - Gatus Status:
         icon: sh-gatus
-        href: https://status.krynet.cc
+        href: https://status.lan.kkasbi.in
         description: Uptime Monitoring
         ping: http://192.168.0.200:3001
         server: agni
@@ -50,7 +90,7 @@
 
     - Healthchecks:
         icon: sh-healthchecks
-        href: https://hc.krynet.cc
+        href: https://hc.lan.kkasbi.in
         description: Backup Monitoring
         ping: http://192.168.0.200:8000
         server: agni
@@ -58,23 +98,15 @@
 
     - Grafana:
         icon: grafana.svg
-        href: https://grafana.krynet.cc
+        href: https://grafana.lan.kkasbi.in
         description: Metrics Dashboard
         ping: http://192.168.0.200:3000
         server: agni
         container: grafana
 
-    - Copyparty:
-        icon: sh-copyparty
-        href: https://file.krynet.cc
-        description: File Server
-        ping: http://192.168.0.200:3923
-        server: agni
-        container: copyparty
-
     - Prometheus:
         icon: prometheus.svg
-        href: https://prom.krynet.cc
+        href: https://prom.lan.kkasbi.in
         description: Metrics DB
         ping: http://192.168.0.200:9090
         server: agni
@@ -82,67 +114,72 @@
 
     - Gotify:
         icon: gotify.svg
-        href: https://notify.krynet.cc
+        href: https://notify.lan.kkasbi.in
         description: Notifications
         ping: http://192.168.0.200:8089
         server: agni
         container: gotify
 
+    - Vaultwarden:
+        icon: vaultwarden.svg
+        href: https://vault.lan.kkasbi.in
+        description: Password Vault
+        ping: http://192.168.0.200:8222
+        server: agni
+        container: vaultwarden
+
+    - Copyparty:
+        icon: sh-copyparty
+        href: https://file.lan.kkasbi.in
+        description: File Server
+        ping: http://192.168.0.200:3923
+        server: agni
+        container: copyparty
+
 - Network Tools:
     - AdGuard (Agni):
         icon: adguard-home.svg
-        href: https://adguard2.krynet.cc
+        href: https://adguard2.lan.kkasbi.in
         ping: http://192.168.0.200:7000
         server: agni
         container: adguardhome
         widget:
           type: adguard
           url: http://192.168.0.200:7000
-          username: "admin"
-          password: ""
+          username: {{HOMEPAGE_VAR_ADGUARD_AGNI_USERNAME}}
+          password: {{HOMEPAGE_VAR_ADGUARD_AGNI_PASSWORD}}
 
     - AdGuard (Prime):
         icon: adguard-home.svg
-        href: https://adguard.krynet.cc
+        href: https://adguard.lan.kkasbi.in
         ping: http://192.168.0.100:7000
         server: docker
         container: adguardhome
         widget:
           type: adguard
           url: http://192.168.0.100:7000
-          username: "admin"
-          password: ""
+          username: {{HOMEPAGE_VAR_ADGUARD_PRIME_USERNAME}}
+          password: {{HOMEPAGE_VAR_ADGUARD_PRIME_PASSWORD}}
 
     - AdGuard Sync:
         icon: sh-adguardhome-sync
-        href: https://adsync.krynet.cc
+        href: https://adsync.lan.kkasbi.in
         description: Sync Tool
         ping: http://192.168.0.200:8082
         server: agni
         container: adguardhome-sync
 
-    - Dozzle (Agni):
+    - Dozzle Logs:
         icon: dozzle.svg
-        href: https://logs2.krynet.cc
+        href: https://logs.lan.kkasbi.in
+        description: Fleet Container Logs
         ping: http://192.168.0.200:8088
         server: agni
         container: dozzle
 
-    - Dozzle (Prime):
-        icon: dozzle.svg
-        href: https://logs.krynet.cc
-        ping: http://192.168.0.100:8088
-        server: docker
-        container: dozzle
-
-    - Dozzle (Legion):
-        icon: dozzle.svg
-        href: https://logs3.krynet.cc
-        ping: http://192.168.0.150:8088
-
     - SpeedTracker (Prime):
         icon: sh-speedtest-tracker
-        href: https://speed.krynet.cc
+        href: https://speed.lan.kkasbi.in
         ping: http://192.168.0.100:8093
         server: docker
         container: speedtest-tracker
@@ -150,88 +187,27 @@
             type: speedtest
             url: http://192.168.0.100:8093
             version: 1
-            key: : 3
+            key: {{HOMEPAGE_VAR_SPEEDTRACKER_PRIME_KEY}}
+            bitratePrecision: 3
 
     - OpenSpeedTest (Agni):
         icon: openspeedtest.svg
-        href: https://ospt2.krynet.cc
+        href: https://ospt2.lan.kkasbi.in
         ping: http://192.168.0.200:8092
         server: agni
         container: openspeedtest
 
     - OpenSpeedTest (Prime):
         icon: openspeedtest.svg
-        href: https://ospt.krynet.cc
+        href: https://ospt.lan.kkasbi.in
         ping: http://192.168.0.100:8992
         server: docker
         container: openspeedtest
 
-- Media:
-    - Jellyfin:
-        icon: jellyfin.svg
-        href: https://media.krynet.cc
-        description: Media Server
-        ping: http://192.168.0.100:8096
-        server: docker
-        container: jellyfin
-        widget:
-          type: jellyfin
-          url: http://192.168.0.100:8096
-          key: 
-
-    - Jellystat:
-        icon: sh-jellystat
-        href: https://jellystat.krynet.cc
-        description: Viewing Analytics
-        ping: http://192.168.0.100:3005
-        server: docker
-        container: jellystat
-
-    - Immich:
-        icon: immich.svg
-        href: https://photos.krynet.cc
-        description: Photos
-        ping: http://192.168.0.100:2283
-        server: docker
-        container: immich_server
-        widget:
-          type: immich
-          url: http://192.168.0.100:2283
-          key: 
-          version: 2
-          
-    - Audiobookshelf:
-        icon: sh-audiobookshelf
-        href: https://abs.krynet.cc
-        description: Audiobooks and Podcasts
-        ping: http://192.168.0.100:13378
-        server: docker
-        container: audiobookshelf
-        widget:
-            type: audiobookshelf
-            url: http://192.168.0.100:13378
-            key: 
-
-    - Immich Power Tools:
-        icon: sh-immich-power-tools
-        href: http://192.168.0.100:8001
-        description: Bulk Edits
-        ping: http://192.168.0.100:8001
-        server: docker
-        container: immich_power_tools
-
-    - TDarr:
-        icon: sh-tdarr
-        href: https://tdarr.krynet.cc
-        description: Transcoding
-        ping: http://192.168.0.100:8265
-        server: docker
-        container: tdarr-server
-
 - Smart Home & AI:
     - Home Assistant:
         icon: home-assistant.svg
-        href: https://ha.krynet.cc
+        href: https://ha.lan.kkasbi.in
         description: Automation Hub
         ping: http://192.168.0.200:8123
         server: agni
@@ -239,31 +215,47 @@
         widget:
             type: homeassistant
             url: http://192.168.0.200:8123
-            key: 
+            key: {{HOMEPAGE_VAR_HA_TOKEN}}
+
+    - Frigate NVR:
+        icon: frigate.svg
+        href: https://nvr.lan.kkasbi.in
+        description: AI Video NVR (Legion)
+        ping: http://192.168.0.150:5000
+        widget:
+            type: frigate
+            url: http://192.168.0.150:5000
 
     - OpenWebUI:
         icon: sh-open-webui
-        href: https://ow.krynet.cc
+        href: https://ow.lan.kkasbi.in
         description: AI Chat Interface (Legion)
         ping: http://192.168.0.150:3999
 
     - LiteLLM:
         icon: sh-litellm
-        href: https://litellm.krynet.cc
+        href: https://litellm.lan.kkasbi.in
         description: LLM API Gateway (Legion)
         ping: http://192.168.0.150:4000/health/liveliness
 
     - Ollama:
         icon: ollama.svg
-        href: https://ollama.krynet.cc
+        href: https://ollama.lan.kkasbi.in
         description: GPU CUDA Inference (RTX 3060)
         ping: http://192.168.0.150:11434
 
-
 - Productivity:
+    - Nucleus:
+        icon: /images/nucleus.png
+        href: https://finance.lan.kkasbi.in
+        description: Personal & Family Finance Core
+        ping: http://192.168.0.100:8081/api/v1/health
+        server: docker
+        container: nucleus
+
     - Paperless-NGX:
         icon: paperless-ngx.svg
-        href: https://docs.krynet.cc
+        href: https://docs.lan.kkasbi.in
         description: Document Management
         ping: http://192.168.0.100:8089
         server: docker
@@ -271,36 +263,28 @@
 
     - FreshRSS:
         icon: freshrss.svg
-        href: https://rss.krynet.cc
+        href: https://rss.lan.kkasbi.in
         description: RSS Reader
         ping: http://192.168.0.100:8086
         server: docker
         container: freshrss
 
-    - Homarr:
-        icon: homarr.svg
-        href: https://dash.krynet.cc
-        description: Server Dashboard
-        ping: http://192.168.0.100:7575
-        server: docker
-        container: homarr
-
 - Automation:
-    - Jellyseerr:
-        icon: jellyseerr.svg
-        href: https://request.krynet.cc
-        description: Requests
+    - Seerr:
+        icon: seerr.svg
+        href: https://request.lan.kkasbi.in
+        description: Media Requests (v3.4.1)
         ping: http://192.168.0.100:5055
         server: docker
-        container: jellyseerr
+        container: seerr
         widget:
-          type: jellyseerr
+          type: seerr
           url: http://192.168.0.100:5055
-          key: 
+          key: {{HOMEPAGE_VAR_SEERR_KEY}}
 
     - Sonarr:
         icon: sonarr.svg
-        href: https://sonarr.krynet.cc
+        href: https://sonarr.lan.kkasbi.in
         description: TV Shows
         ping: http://192.168.0.100:8989
         server: docker
@@ -308,11 +292,11 @@
         widget:
           type: sonarr
           url: http://192.168.0.100:8989
-          key: 
+          key: {{HOMEPAGE_VAR_SONARR_KEY}}
 
     - Radarr:
         icon: radarr.svg
-        href: https://radarr.krynet.cc
+        href: https://radarr.lan.kkasbi.in
         description: Movies
         ping: http://192.168.0.100:7878
         server: docker
@@ -320,19 +304,39 @@
         widget:
           type: radarr
           url: http://192.168.0.100:7878
-          key: 
+          key: {{HOMEPAGE_VAR_RADARR_KEY}}
 
     - Bazarr:
         icon: bazarr.svg
-        href: https://bazarr.krynet.cc
-        description: Subtitles
+        href: https://bazarr.lan.kkasbi.in
+        description: Subtitles & Whisper AI
         ping: http://192.168.0.100:6767
         server: docker
         container: bazarr
+        widget:
+          type: bazarr
+          url: http://192.168.0.100:6767
+          key: {{HOMEPAGE_VAR_BAZARR_KEY}}
+
+    - Chaptarr:
+        icon: readarr.svg
+        href: https://chaptarr.lan.kkasbi.in
+        description: Audiobooks & Books
+        ping: http://192.168.0.100:8789
+        server: docker
+        container: chaptarr
+
+    - Recyclarr:
+        icon: sh-recyclarr
+        href: https://recyclarr.dev
+        description: TRaSH Guides Sync
+        ping: http://192.168.0.100:8989
+        server: docker
+        container: recyclarr
 
     - Prowlarr:
         icon: prowlarr.svg
-        href: https://indexer.krynet.cc
+        href: https://indexer.lan.kkasbi.in
         description: Indexers
         ping: http://192.168.0.100:9696
         server: docker
@@ -340,38 +344,73 @@
         widget:
             type: prowlarr
             url: http://192.168.0.100:9696
-            key: 
+            key: {{HOMEPAGE_VAR_PROWLARR_KEY}}
+
+    - Studio Hub:
+        icon: sh-whisparr
+        href: https://whisparr.lan.kkasbi.in
+        description: Digital Asset Archive
+        ping: http://192.168.0.100:6969
+        server: docker
+        container: whisparr
+
+    - Jellystat:
+        icon: sh-jellystat
+        href: https://jellystat.lan.kkasbi.in
+        description: Viewing Analytics
+        ping: http://192.168.0.100:3005
+        server: docker
+        container: jellystat
+
+    - Tdarr:
+        icon: sh-tdarr
+        href: https://tdarr.lan.kkasbi.in
+        description: Transcoding Pipeline
+        ping: http://192.168.0.100:8267
+        server: docker
+        container: tdarr-server
+        widget:
+          type: tdarr
+          url: http://192.168.0.100:8267
+
+    - Immich Power Tools:
+        icon: sh-immich-power-tools
+        href: http://192.168.0.100:8001
+        description: Bulk Library Edits
+        ping: http://192.168.0.100:8001
+        server: docker
+        container: immich_power_tools
 
     - FlareSolverr:
         icon: sh-flaresolverr
-        href: https://flare.krynet.cc
+        href: https://flare.lan.kkasbi.in
         description: Captcha Solver
         ping: http://192.168.0.100:8191
         server: docker
         container: flaresolverr
 
 - Downloads:
-    - qBittorrent:
-        icon: qbittorrent.svg
-        href: https://qb.krynet.cc
-        description: Torrents
-        ping: http://192.168.0.100:8080
-        server: docker
-        container: qbittorrent
-        widget:
-          type: qbittorrent
-          url: http://192.168.0.100:8080
-          username: "admin"
-          password: ""
-
     - SABnzbd:
         icon: sabnzbd.svg
-        href: https://nzb.krynet.cc
-        description: Usenet
+        href: https://nzb.lan.kkasbi.in
+        description: Usenet (Tier 1)
         ping: http://192.168.0.100:8085
         server: docker
         container: sabnzbd
         widget:
             type: sabnzbd
             url: http://192.168.0.100:8085
-            key: 
+            key: {{HOMEPAGE_VAR_SABNZBD_KEY}}
+
+    - qBittorrent:
+        icon: qbittorrent.svg
+        href: https://qb.lan.kkasbi.in
+        description: Torrents (Tier 2)
+        ping: http://192.168.0.100:8080
+        server: docker
+        container: qbittorrent
+        widget:
+          type: qbittorrent
+          url: http://192.168.0.100:8080
+          username: {{HOMEPAGE_VAR_QBITTORRENT_USERNAME}}
+          password: {{HOMEPAGE_VAR_QBITTORRENT_PASSWORD}}

@@ -1,0 +1,41 @@
+# Restarts the VPN container's namespace-sharing dependents after it bounces.
+# Rationale, measurements and the discovery logic: config/vpn-watchdog/watchdog.sh
+#
+# 🔴 This container has READ-WRITE access to the Docker socket, which is
+# root-equivalent on Prime. That is the whole reason it is a separate, single-purpose
+# stack rather than a service inside media-stack: it is trivial to audit, and trivial
+# to remove. It is deliberately unreachable — `network_mode: none`, no ports, no other
+# mounts — so nothing on the network can ask it to do anything. Its only input is the
+# state of the containers it inspects.
+#
+# Deliberately NOT part of media-stack, so adding it requires no redeploy of the 14
+# containers there.
+services:
+  vpn-watchdog:
+    image: docker:28-cli
+    container_name: vpn-watchdog
+    restart: unless-stopped
+    # No network at all. It talks to Docker over the socket, never over IP.
+    network_mode: none
+    environment:
+      - TZ=${TZ}
+      - VPN_CONTAINER=gluetun
+      - CHECK_INTERVAL=30
+      - UNHEALTHY_THRESHOLD=3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_CONFIG_PATH}/vpn-watchdog/watchdog.sh:/watchdog.sh:ro
+    entrypoint: ["/bin/sh", "/watchdog.sh"]
+    healthcheck:
+      # The loop writes a line at least every CHECK_INTERVAL; if the shell has died the
+      # container is useless but would otherwise still look "up".
+      test: ["CMD-SHELL", "pgrep -f watchdog.sh >/dev/null || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"

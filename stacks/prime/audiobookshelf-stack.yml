@@ -21,35 +21,40 @@ services:
       # Media
       - ${DOCKER_DATA_PATH}/media/audiobooks:/audiobooks
       - ${DOCKER_DATA_PATH}/media/podcasts:/podcasts
+    healthcheck:
+      test: ["CMD-SHELL", "node -e 'require(\"http\").get(\"http://localhost:80/healthcheck\", (res) => process.exit(res.statusCode === 200 ? 0 : 1))' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - kry_net
       - traefik_proxy
 
   # ==========================================
-  # Libation (Audible Downloader)
+  # Libation (Audible Downloader - Silent Background Sync)
   # ==========================================
-  # libation:
-  #   image: rmcrackan/libation:latest
-  #   container_name: libation
-  #   restart: unless-stopped
-  #   user: 568:568
-  #   ports:
-  #     - "8083:8080"
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #     - TZ=${TZ}
-  #     - SLEEP_TIME=10000m 
-  #     - LIBATION_BOOKS_DIR=/data
-  #   volumes:
-  #     # Configs
-  #     - ${DOCKER_CONFIG_PATH}/libation:/config
-  #     # Media Mapping (CRITICAL)
-  #     # We map the host audiobook folder to '/data' inside the container
-  #     - ${DOCKER_DATA_PATH}/media/audiobooks:/data
-  #   networks:
-  #     - kry_net
-  #     - traefik_proxy
+  libation:
+    image: rmcrackan/libation:latest
+    container_name: libation
+    restart: unless-stopped
+    user: "568:568"
+    environment:
+      - TZ=${TZ}
+      - SLEEP_TIME=60m
+    volumes:
+      # Configs (AccountsSettings.json, Settings.json, libation-master.key)
+      - ${DOCKER_CONFIG_PATH}/libation:/config
+      # Media Mapping: writes directly to the Audiobookshelf library
+      - /mnt/andromeda/media/audiobooks:/data
+    networks:
+      - kry_net
+      - traefik_proxy
 
 networks:
   kry_net:

@@ -24,6 +24,8 @@ A production-grade, distributed private cloud and local AI compute ecosystem ser
 | [**⚡ Legion Server Manual**](docs/LEGION-SERVER.md) | AI & GPU Supernode, RTX 3060 CUDA, Ollama, LiteLLM Gateway, OpenWebUI, Tdarr Node |
 | [**🤖 AI Stack Architecture**](docs/AI-STACK.md) | Local LLM inference, remote Immich ML acceleration, and LiteLLM agent proxy |
 | [**🔒 Zero-Trust Networking**](docs/networking.md) | Tailscale mesh, Split-Horizon DNS, Cloudflare DNS-01 SSL, 0 open public ports |
+| [**🌐 Network Speed & Backhaul Audit**](docs/2026-11-NETWORK-SPEED-AND-TOPOLOGY-AUDIT.md) | EasyMesh Gigabit Ethernet backhaul resolution & fleet throughput telemetry |
+| [**🎧 Audiobook Stack Architecture**](docs/plans/2026-11-AUDIOBOOK-ECOSYSTEM-AND-REORGANIZATION-PLAN.md) | Audiobookshelf, Chaptarr (.NET 10), and Libation Headless zero-touch sync |
 | [**📦 Full Service Matrix**](docs/services.md) | Comprehensive 45+ container catalog, port mappings, and health checks |
 | [**🚑 Operations Playbook**](docs/OPERATIONS-PLAYBOOK.md) | 3-2-1 backup verification, ZFS snapshots, and end-to-end database disaster recovery |
 | [**🤖 Agent Operating Guide**](AGENTS.md) | AI agent directives, skills portfolio, Portainer API tooling, and branching lifecycle |
@@ -46,12 +48,12 @@ KryNet decouples compute, storage, and networking across three dedicated physica
 │ • Ubuntu Server 24.04 LTS     │ • TrueNAS SCALE (Dragonfish)    │ • Ubuntu Server 26.04 LTS     │
 │ • Caddy Reverse Proxy (HTTPS) │ • ZFS Pools: orion & andromeda  │ • NVIDIA RTX 3060 6GB (CUDA)  │
 │ • AdGuard Home (Primary DNS)  │ • Immich Core (v3.1 VectorChord)│ • Ollama Engine (Qwen/DeepSeek│
-│ • Vaultwarden Password Vault  │ • Jellyfin Media Server         │ • LiteLLM Gateway (:4000)     │
-│ • Home Assistant Automation   │ • *Arr Suite (Sonarr, Radarr)   │ • OpenWebUI Interface (:3999) │
-│ • Prometheus Master DB        │ • Gluetun WireGuard VPN Gateway │ • Immich ML Remote Offload    │
-│ • Grafana Fleet Dashboards    │ • Jellystat Analytics (:3005)   │ • Tdarr GPU Transcode Worker  │
-│ • Gatus & Discord Alerting    │ • Paperless-ngx & Audiobookshelf│ • NVIDIA GPU Metrics Exporter │
-│ • Portainer Server (Master)   │ • Portainer Instance (TrueNAS)  │ • Portainer Agent Endpoint    │
+│ • Vaultwarden Password Vault  │ • Jellyfin Media Server (v12) │ • LiteLLM Gateway (:4000)     │
+│ • Home Assistant Automation   │ • *Arr & Chaptarr (.NET 10)   │ • OpenWebUI Interface (:3999) │
+│ • Prometheus Master DB        │ • Audiobookshelf & Libation   │ • Immich ML Remote Offload    │
+│ • Grafana Fleet Dashboards    │ • Gluetun Singapore VPN       │ • Tdarr GPU Transcode Worker  │
+│ • Gatus & Discord Alerting    │ • Autonomous VPN Watchdog     │ • NVIDIA GPU Metrics Exporter │
+│ • Portainer Server (Master)   │ • Jellystat & Paperless-ngx   │ • Portainer Agent Endpoint    │
 └───────────────────────────────┴─────────────────────────────────┴───────────────────────────────┘
 ```
 
@@ -89,10 +91,13 @@ The entire 3-node cluster is managed, provisioned, debugged, and monitored via *
 ### 🧠 Key AI Management Highlights:
 1. **Zero Manual Compose Copy-Pasting:** AI agents interact directly with the cluster via [`scripts/portainer-helper.sh`](scripts/portainer-helper.sh) to query live environments, validate YAML syntax, and deploy/redeploy Portainer Stacks programmatically.
 2. **Autonomous Tooling & Skills (`.agents/skills/`):**
-   - 🏥 [**`fleet-health`**](.agents/skills/fleet-health/SKILL.md): 12-point automated diagnostic health checks (containers, ZFS pools, GPU thermals, Tailscale, DNS, Gatus, backups).
+   - 🏥 [**`fleet-health`**](.agents/skills/fleet-health/SKILL.md): 15-point automated cluster diagnostic health checks (containers, ZFS pools, GPU thermals, Tailscale, DNS, Gatus, backups, Gigabit backhaul, VPN tunnel, Audiobook stack).
    - 🐳 [**`portainer-ops`**](.agents/skills/portainer-ops/SKILL.md): Multi-node stack deployment, rollback, and lifecycle management.
    - 💾 [**`backup-dr`**](.agents/skills/backup-dr/SKILL.md): Automated 3-2-1 backup verification and database disaster recovery execution.
    - 🔄 [**`caddy-proxy`**](.agents/skills/caddy-proxy/SKILL.md): Zero-downtime reverse proxy validation and hot reloading.
+   - 🏠 [**`homeassistant-ops`**](.agents/skills/homeassistant-ops/SKILL.md): Smart home integration lifecycle and automation management.
+   - 🌐 [**`krynet-fleet`**](.agents/skills/krynet-fleet/SKILL.md): Fleet-wide cross-node SSH and container orchestration.
+   - 🔁 [**`session-handoff`**](.agents/skills/session-handoff/SKILL.md): Agent handoff tracking and progress continuity.
 3. **Local Self-Hosted Agent Backends:** The local coding models driving terminal operations run directly on Legion's RTX 3060 (`qwen2.5-coder:7b` and `deepseek-r1:7b`) via the LiteLLM Gateway (`http://192.168.0.150:4000/v1`).
 4. **Branch-Per-Task & Conventional Commits:** All modifications across stacks, scripts, and documentation follow strict Git branch isolation and Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
 
@@ -149,26 +154,29 @@ KryNet enforces a strict **Zero Open WAN Ports** security posture. No ports are 
 | | **Jellyfin** | Prime | 8096 | `media.krynet.cc` | 4K HDR Media Streaming Server |
 | | **Jellystat** | Prime | 3005 | `jellystat.krynet.cc` | Jellyfin Viewing History & Analytics |
 | | **Audiobookshelf** | Prime | 13378 | `abs.krynet.cc` | Audiobooks & Podcasts Streaming |
-| **Automation** | **Sonarr** | Prime | 8989 | `sonarr.krynet.cc` | TV Series Management & Auto-Downloads |
+| | **Libation Headless** | Prime | N/A (Internal) | N/A | Automated Audible Library Sync & Decryption |
+| **Automation** | **Chaptarr** | Prime | 8789 | `chaptarr.krynet.cc` | Modern .NET 10 Audiobook PVR & Arr Sync |
+| | **Sonarr** | Prime | 8989 | `sonarr.krynet.cc` | TV Series Management & Auto-Downloads |
 | | **Radarr** | Prime | 7878 | `radarr.krynet.cc` | Movie Library Management & Auto-Downloads |
 | | **Prowlarr** | Prime | 9696 | `indexer.krynet.cc` | Indexer Aggregator & Arr Sync |
 | | **Bazarr** | Prime | 6767 | `bazarr.krynet.cc` | Automated Subtitle Downloader |
 | | **Jellyseerr** | Prime | 5055 | `request.krynet.cc` | Media Discovery & Request Management |
-| | **Gluetun VPN** | Prime | 8080/5055 | N/A (Gateway) | Surfshark WireGuard Kill-Switch Gateway |
+| | **Gluetun VPN** | Prime | 8080/5055 | N/A (Gateway) | Surfshark Singapore WireGuard Kill-Switch Gateway |
+| | **VPN Watchdog** | Prime | N/A (Daemon) | N/A | Autonomous VPN Auto-Healing & Cascading Restarter |
 | | **qBittorrent** | Prime | 8080 | `qbit.krynet.cc` | Torrent Client (Isolated through VPN) |
 | | **SABnzbd** | Prime | 8085 | `nzb.krynet.cc` | Usenet Downloader |
-| **Productivity** | **Vaultwarden** | Agni | 8222 | `vault.krynet.cc` | Bitwarden-Compatible Password Vault |
+| **Productivity** | **Vaultwarden** | Agni | 8222 | `vault.krynet.cc` | Bitwarden-Compatible Password Vault (Signups Disabled) |
 | | **Home Assistant** | Agni | 8123 | `ha.krynet.cc` | Smart Home IoT Automation Hub |
 | | **Paperless-ngx** | Prime | 8089 | `paperless.krynet.cc` | Automated Document Archiving & OCR |
 | | **FreshRSS** | Prime | 8086 | `rss.krynet.cc` | Self-Hosted RSS Feed Aggregator |
 | | **Copyparty** | Agni | 3923 | `file.krynet.cc` | Resilient Web-Based File Server |
 | **Observability** | **Prometheus Master** | Agni | 9090 | `prom.krynet.cc` | Central Time-Series Metrics Database |
 | | **Grafana** | Agni | 3000 | `grafana.krynet.cc` | Production Fleet & GPU Dashboards |
-| | **Gatus** | Agni | 3001 | `status.krynet.cc` | 38+ Service Probes & Discord Webhook Alerts |
+| | **Gatus** | Agni | 3001 | `status.krynet.cc` | 45+ Service Probes & Discord/Gotify Alerts |
 | | **Healthchecks** | Agni | 8000 | `hc.krynet.cc` | 12-Hour Backup Cron Dead-Man's Switch |
 | | **Gotify** | Agni | 8089 | `notify.krynet.cc` | Push Notifications for Android / iOS |
 | | **NVIDIA GPU Exporter** | Legion | 9835 | N/A (Prometheus) | Real-time RTX 3060 Thermals & VRAM Metrics |
-| | **Homepage** | Agni | 3075 | `home.krynet.cc` | Master Unified Dashboard |
+| | **Homepage** | Agni | 3075 | `home.krynet.cc` | Master Unified Dashboard (Jellyfin v2 Widget) |
 | | **Homarr** | Prime | 7575 | `dash.krynet.cc` | Secondary Lightweight LAN Dashboard |
 
 ---
@@ -241,17 +249,21 @@ echo "your_prime_token" > ~/.portainer/prime_token
 .
 ├── .agents/                    # Agentic AI capabilities & skills
 │   └── skills/
-│       ├── fleet-health/       # 12-point cluster diagnostic health checks
+│       ├── fleet-health/       # 15-point cluster diagnostic health & backhaul telemetry
 │       ├── portainer-ops/      # Programmatic stack deployment engine
 │       ├── backup-dr/          # 3-2-1 backup verification & DR runbooks
-│       └── caddy-proxy/        # Zero-downtime reverse proxy reload skill
+│       ├── caddy-proxy/        # Zero-downtime reverse proxy reload skill
+│       ├── homeassistant-ops/  # Smart home IoT lifecycle management
+│       ├── krynet-fleet/       # Fleet-wide multi-node orchestration
+│       └── session-handoff/    # Autonomous handoff & state tracking
 ├── config/                     # Configuration sources of truth
 │   ├── caddy/                  # Caddyfile reverse proxy rules & wildcard routing
-│   ├── gatus/                  # 38+ service health probe definitions & Discord webhook
+│   ├── gatus/                  # 45+ service health probe definitions & alerts
 │   ├── prometheus/             # Multi-node Prometheus scrape configuration
 │   ├── grafana/                # Auto-provisioned datasources & dashboard JSONs
 │   ├── homepage/               # Unified dashboard configuration (services.yaml)
-│   └── litellm/                # AI model routing gateway rules
+│   ├── litellm/                # AI model routing gateway rules
+│   └── vpn-watchdog/           # Gluetun health checking & auto-healing script
 ├── docs/                       # Comprehensive documentation suite
 │   ├── AGNI-SERVER.md          # Agni node operations manual
 │   ├── PRIME-SERVER.md         # Prime node & ZFS storage manual
@@ -260,14 +272,18 @@ echo "your_prime_token" > ~/.portainer/prime_token
 │   ├── networking.md           # Zero-trust networking & DNS deep dive
 │   ├── services.md             # Complete service catalog and port reference
 │   ├── OPERATIONS-PLAYBOOK.md  # Disaster recovery runbooks & maintenance procedures
+│   ├── 2026-11-NETWORK-SPEED-AND-TOPOLOGY-AUDIT.md # EasyMesh Gigabit backhaul audit
+│   ├── handoff/                # Agent state, handoff, and progress logs
 │   └── plans/                  # Architectural roadmap & enhancement documents
 ├── scripts/                    # Autonomous Agent API Tooling
+│   ├── fleet-validate.sh       # Comprehensive whole-fleet health & backhaul validator
+│   ├── audiobook-validate.py   # Audiobook library structure & ASIN validator
 │   ├── portainer-helper.sh     # Programmatic Portainer API CLI
 │   ├── tailscale-helper.sh     # Tailnet status & auth key generator
 │   └── cloudflare-helper.sh    # DNS records and tunnel querying
 ├── stacks/                     # Declarative Docker Compose Stacks
 │   ├── agni/                   # Ingress, DNS, Vaultwarden, Monitoring stacks
-│   ├── prime/                  # Storage, Immich, Media (*Arr), Jellystat stacks
+│   ├── prime/                  # Storage, Immich, Media (*Arr/Chaptarr), Audiobookshelf, VPN Watchdog
 │   └── legion/                 # CUDA AI, Immich ML, Tdarr, Sensors stacks
 ├── AGENTS.md                   # AI Agent operating directives & cluster safety rules
 └── opencode.json               # OpenCode CLI autonomous agent configuration

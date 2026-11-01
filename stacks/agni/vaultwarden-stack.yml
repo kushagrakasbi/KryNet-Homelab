@@ -9,10 +9,24 @@ services:
       - "8222:80"
     environment:
       - TZ=${TZ}
-      - SIGNUPS_ALLOWED=true  # Set to false after first signup
+      - SIGNUPS_ALLOWED=false # Hardened: prevent unauthorized registrations
+      - INVITATIONS_ALLOWED=true # Admin can still invite family members if needed
+      # 🔴 WebAuthn/passkey origin is bound to this value -- changing it can invalidate
+      # already-registered 2FA credentials. Left on the krynet.cc alias deliberately.
       - DOMAIN=https://vault.krynet.cc
     volumes:
       - /home/agni/apps/docker/vaultwarden:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/alive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - agni_net
 
