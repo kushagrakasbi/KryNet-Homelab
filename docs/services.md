@@ -25,38 +25,41 @@ This document provides detailed configuration, deployment, and troubleshooting i
 
 | Service | Node | Purpose | Port | Ingress URL | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Caddy** | 🔥 Agni | Ingress Reverse Proxy & Wildcard SSL | 80/443 | `*.krynet.cc` | 🟢 Active |
-| **AdGuard Home** | 🔥 Agni / 🌟 Prime | Split-Horizon DNS & Ad Blocking | 53 / 7000 | `adguard2.krynet.cc` | 🟢 Active |
+| **Caddy** | 🔥 Agni | Ingress Reverse Proxy & Wildcard SSL | 80/443 | `*.lan.kkasbi.in` (+ `*.krynet.cc` alias) | 🟢 Active |
+| **AdGuard Home** | 🔥 Agni / 🌟 Prime | Split-Horizon DNS & Ad Blocking | 53 / 7000 | `adguard2.lan.kkasbi.in` | 🟢 Active |
 | **Tailscale** | Fleet Mesh | Zero-Trust WireGuard Mesh VPN | N/A | `100.x.x.x` | 🟢 Active |
-| **Immich Core (v3.1)** | 🌟 Prime | Self-hosted Photo & Video Backup | 2283 | `photos.krynet.cc` | 🟢 Active |
-| **Jellyfin** | 🌟 Prime | Media Server & Streaming | 8096 | `media.krynet.cc` | 🟢 Active |
-| **Jellystat** | 🌟 Prime | Jellyfin Watch Analytics & History | 3005 | `jellystat.krynet.cc` | 🟢 Active |
-| **Jellyseerr** | 🌟 Prime | Media Request Manager (Gluetun) | 5055 | `request.krynet.cc` | 🟢 Active |
-| **Sonarr** | 🌟 Prime | TV Show PVR Automation | 8989 | `sonarr.krynet.cc` | 🟢 Active |
-| **Radarr** | 🌟 Prime | Movie PVR Automation | 7878 | `radarr.krynet.cc` | 🟢 Active |
-| **Prowlarr** | 🌟 Prime | Torrent & Usenet Indexer Sync | 9696 | `indexer.krynet.cc` | 🟢 Active |
-| **Bazarr** | 🌟 Prime | Subtitle Downloader | 6767 | `bazarr.krynet.cc` | 🟢 Active |
-| **qBittorrent** | 🌟 Prime | BitTorrent Client (Gluetun VPN) | 8080 | `qbit.krynet.cc` | 🟢 Active |
-| **SABnzbd** | 🌟 Prime | Usenet Client | 8085 | `nzb.krynet.cc` | 🟢 Active |
+| **Immich Core (v3.1)** | 🌟 Prime | Self-hosted Photo & Video Backup | 2283 | `photos.lan.kkasbi.in` | 🟢 Active |
+| **Jellyfin** | 🌟 Prime | Media Server & Streaming | 8096 | `media.lan.kkasbi.in` | 🟢 Active |
+| **Jellystat** | 🌟 Prime | Jellyfin Watch Analytics & History | 3005 | `jellystat.lan.kkasbi.in` | 🟢 Active |
+| **Jellyseerr** | 🌟 Prime | Media Request Manager (Gluetun) | 5055 | `request.lan.kkasbi.in` | 🟢 Active |
+| **Sonarr** | 🌟 Prime | TV Show PVR Automation | 8989 | `sonarr.lan.kkasbi.in` | 🟢 Active |
+| **Radarr** | 🌟 Prime | Movie PVR Automation | 7878 | `radarr.lan.kkasbi.in` | 🟢 Active |
+| **Chaptarr** | 🌟 Prime | Audiobook PVR Automation (.NET 10) | 8789 | `chaptarr.lan.kkasbi.in` | 🟢 Active |
+| **Prowlarr** | 🌟 Prime | Torrent & Usenet Indexer Sync | 9696 | `indexer.lan.kkasbi.in` | 🟢 Active |
+| **Bazarr** | 🌟 Prime | Subtitle Downloader | 6767 | `bazarr.lan.kkasbi.in` | 🟢 Active |
+| **qBittorrent** | 🌟 Prime | BitTorrent Client (Gluetun VPN) | 8080 | `qbit.lan.kkasbi.in` | 🟢 Active |
+| **SABnzbd** | 🌟 Prime | Usenet Client | 8085 | `nzb.lan.kkasbi.in` | 🟢 Active |
 | **Gluetun** | 🌟 Prime | Surfshark WireGuard VPN Gateway | 8080/5055 | N/A (Internal) | 🟢 Active |
-| **Tdarr Server** | 🌟 Prime | Video Transcoding Coordinator | 8265 | `tdarr.krynet.cc` | 🟢 Active |
+| **VPN Watchdog** | 🌟 Prime | Gluetun Auto-Healer & Dependent Cascade | N/A | N/A (Daemon) | 🟢 Active |
+| **Tdarr Server** | 🌟 Prime | Video Transcoding Coordinator | 8265 | `tdarr.lan.kkasbi.in` | 🟢 Active |
 | **Tdarr Node (GPU)**| ⚡ Legion | RTX 3060 NVENC Hardware Transcoder| N/A | N/A (Worker) | 🟢 Active |
 | **Ollama (CUDA)** | ⚡ Legion | Local LLM Engine (Qwen / DeepSeek)| 11434 | N/A (Internal) | 🟢 Active |
-| **LiteLLM Gateway**| ⚡ Legion | Universal AI Model API Proxy | 4000 | `litellm.krynet.cc` | 🟢 Active |
-| **OpenWebUI** | ⚡ Legion | AI Chat & Workflow Interface | 3999 | `ow.krynet.cc` | 🟢 Active |
+| **LiteLLM Gateway**| ⚡ Legion | Universal AI Model API Proxy | 4000 | `litellm.lan.kkasbi.in` | 🟢 Active |
+| **OpenWebUI** | ⚡ Legion | AI Chat & Workflow Interface | 3999 | `ow.lan.kkasbi.in` | 🟢 Active |
 | **Immich ML Node** | ⚡ Legion | Remote Machine Learning Acceleration | 3003 | N/A (Worker) | 🟢 Active |
 | **NVIDIA GPU Exporter**|⚡ Legion| RTX 3060 Prometheus Exporter | 9835 | N/A (Prometheus) | 🟢 Active |
-| **Vaultwarden** | 🔥 Agni | Encrypted Password Vault | 8222 | `vault.krynet.cc` | 🟢 Active |
-| **Home Assistant** | 🔥 Agni | Smart Home Automation Hub | 8123 | `ha.krynet.cc` | 🟢 Active |
-| **Homepage** | 🔥 Agni | Unified Fleet Dashboard | 3075 | `home.krynet.cc` | 🟢 Active |
-| **Prometheus** | 🔥 Agni | Multi-Node Time-Series Metrics DB | 9090 | `prom.krynet.cc` | 🟢 Active |
-| **Grafana** | 🔥 Agni | Fleet & GPU Metrics Visualization | 3000 | `grafana.krynet.cc` | 🟢 Active |
-| **Gatus** | 🔥 Agni | Multi-Node Service Health Probing | 3001 | `status.krynet.cc` | 🟢 Active |
-| **Gotify** | 🔥 Agni | Mobile Push Notifications | 8089 | `notify.krynet.cc` | 🟢 Active |
-| **Healthchecks** | 🔥 Agni | Backup Cron Dead-Man's Switch | 8000 | `hc.krynet.cc` | 🟢 Active |
-| **Paperless-ngx** | 🌟 Prime | Document Indexing & OCR Archiving | 8089 | `paperless.krynet.cc`| 🟢 Active |
-| **FreshRSS** | 🌟 Prime | Self-hosted RSS Reader | 8086 | `rss.krynet.cc` | 🟢 Active |
-| **Audiobookshelf** | 🌟 Prime | Audiobook & Podcast Streaming | 13378| `abs.krynet.cc` | 🟢 Active |
+| **Vaultwarden** | 🔥 Agni | Encrypted Password Vault | 8222 | `vault.lan.kkasbi.in` | 🟢 Active |
+| **Home Assistant** | 🔥 Agni | Smart Home Automation Hub | 8123 | `ha.lan.kkasbi.in` | 🟢 Active |
+| **Homepage** | 🔥 Agni | Unified Fleet Dashboard | 3075 | `home.lan.kkasbi.in` | 🟢 Active |
+| **Prometheus** | 🔥 Agni | Multi-Node Time-Series Metrics DB | 9090 | `prom.lan.kkasbi.in` | 🟢 Active |
+| **Grafana** | 🔥 Agni | Fleet & GPU Metrics Visualization | 3000 | `grafana.lan.kkasbi.in` | 🟢 Active |
+| **Gatus** | 🔥 Agni | Multi-Node Service Health Probing | 3001 | `status.lan.kkasbi.in` | 🟢 Active |
+| **Gotify** | 🔥 Agni | Mobile Push Notifications | 8089 | `notify.lan.kkasbi.in` | 🟢 Active |
+| **Healthchecks** | 🔥 Agni | Backup Cron Dead-Man's Switch | 8000 | `hc.lan.kkasbi.in` | 🟢 Active |
+| **Paperless-ngx** | 🌟 Prime | Document Indexing & OCR Archiving | 8089 | `paperless.lan.kkasbi.in`| 🟢 Active |
+| **FreshRSS** | 🌟 Prime | Self-hosted RSS Reader | 8086 | `rss.lan.kkasbi.in` | 🟢 Active |
+| **Audiobookshelf** | 🌟 Prime | Audiobook & Podcast Streaming | 13378| `abs.lan.kkasbi.in` | 🟢 Active |
+| **Libation Headless** | 🌟 Prime | Audible Auto-Sync & Decryption | N/A | N/A (Internal Loop) | 🟢 Active |
 
 ### Docker Network Assignment
 
@@ -346,7 +349,40 @@ services:
 {Movie Title} ({Release Year}) [{Quality Full}]
 ```
 
-**Access:** `https://radarr.lan.mydomain2.com` (Admin only)
+**Access:** `https://radarr.lan.kkasbi.in` (Admin only)
+
+---
+
+### Chaptarr (Audiobook Automation)
+
+**Purpose:** Modern .NET 10 successor to Readarr for automated audiobook searching, metadata management, and library monitoring.
+
+**Docker Configuration:**
+```yaml
+services:
+  chaptarr:
+    image: chaptarr/chaptarr:latest
+    container_name: chaptarr
+    ports:
+      - "8789:8787"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/chaptarr:/config
+      - /mnt/andromeda/media/audiobooks:/audiobooks
+      - ${DOCKER_DATA_PATH}:/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
+```
+
+**Key Features:**
+- Seamless integration with Prowlarr indexers (Audiobook category `3030`, EBook category `7000`).
+- Integrated with qBittorrent download client (category `audiobooks`, path `/data/torrents/audiobooks`).
+- Direct root folder targeting `/audiobooks` for Audiobookshelf parity.
 
 ---
 
@@ -898,6 +934,42 @@ services:
 ### AdGuard Home (DNS)
 **Config:** `stacks/prime/adguard.yml`
 **Role:** Secondary DNS (synced from Agni primary via AdGuard Home Sync on Agni).
+
+---
+
+## 🎧 Audiobook Ecosystem (Audiobookshelf + Libation Headless)
+
+### Architecture Overview
+
+```
+Amazon Audible ──> Libation Headless (Prime) ──> /Volumes/media/audiobooks ──> Audiobookshelf (:13378)
+                                                                                       ▲
+Prowlarr (Sync) ──> Chaptarr (:8789) ──> qBittorrent (Gluetun VPN) ────────────────────┘
+```
+
+### Audiobookshelf (Streaming Server)
+- **Role:** Web & mobile audiobook/podcast server with progress tracking, chapter navigation, and offline syncing.
+- **Port:** `13378`
+- **Reverse Proxy:** `abs.lan.kkasbi.in` & `abs.krynet.cc`
+- **Mounts:** `/audiobooks` -> `/mnt/andromeda/media/audiobooks`, `/config` and `/metadata` on Orion SSD.
+
+### Libation Headless (Audible Sync & Decryption)
+- **Role:** Automated background sync with Amazon Audible account, downloading owned titles, decrypting DRM, and producing Audiobookshelf-compliant naming.
+- **Image:** `rmcrackan/libation:latest`
+- **Folder Template:** `<has series#->{Series}/{Series} - {Series Number} - {Title}/{Title} - {Series Number}`
+- **Deduplication & Selective Sync:** Titles tagged as kids books (e.g. Peppa Pig) or unwanted promotional audiobooks are flagged with `IsDeleted = 1` in `LibationContext.db` to prevent downloading.
+
+---
+
+## 🛡️ VPN Watchdog & Gluetun Resilience
+
+**Role:** Autonomous daemon on Prime (`config/vpn-watchdog/watchdog.sh`) ensuring high availability for Gluetun WireGuard tunnel and dependent containers (`qbittorrent`, `seerr`).
+
+**Key Operations:**
+1. **Active Gluetun Health Monitoring:** Probes `http://localhost:8000/v1/publicip/ip` inside Gluetun every 60s.
+2. **Auto-Healing Restart:** If Gluetun fails 3 consecutive health probes (silent NAT dropout or stall), the watchdog restarts Gluetun automatically.
+3. **Cascading Dependent Restarts:** When Gluetun restarts, the watchdog detects newly recovered networking and restarts `qbittorrent` and `seerr` to restore network namespace bindings.
+4. **WireGuard Keepalive:** Gluetun configured with `WIREGUARD_PERSISTENT_KEEPALIVE_INTERVAL=25s` to prevent ISP state table expiry.
 
 ---
 

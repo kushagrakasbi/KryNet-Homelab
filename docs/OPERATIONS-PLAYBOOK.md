@@ -83,10 +83,10 @@ Deploy stacks in this order to respect service dependencies:
 | 1 | `dns-stack.yml` | DNS must be up first |
 | 2 | `tailscale.yml` | VPN connectivity |
 | 3 | `monitoring-sensors.yml` | Enables observability |
-| 4 | `media-stack.yml` | Gluetun VPN → downloaders → *arr → Jellyfin |
-| 5 | `immich.yml` | PostgreSQL → Redis → Server → ML |
-| 6 | `audiobookshelf.yml` | Independent |
-| 7 | `homarr.yml` | Dashboard (needs other services up) |
+| 4 | `media-stack.yml` | Gluetun VPN → downloaders → *arr (inc. Chaptarr) → Jellyfin |
+| 5 | `vpn-watchdog.yml` | Active monitor & self-healing cascade for Gluetun & dependents |
+| 6 | `immich.yml` | PostgreSQL → Redis → Server → ML |
+| 7 | `audiobookshelf-stack.yml` | Audiobookshelf & Libation Headless |
 | 8 | `speedtest.yml` | Independent |
 | 9 | `rclone-stack.yml` | Backup (runs on schedule) |
 
@@ -303,7 +303,7 @@ networks:
    ```
 2. **On Prime:** Stop local ML container (`docker stop immich_machine_learning`) and restart `immich_server` (`docker restart immich_server`).
 3. **In Immich Web UI:**
-   * Go to **`https://photos.krynet.cc`** → **Administration** → **Settings** → **Machine Learning Settings**.
+   * Go to **`https://photos.lan.kkasbi.in`** → **Administration** → **Settings** → **Machine Learning Settings**.
    * Status should display **Healthy / Connected** to `http://192.168.0.150:3003`.
 4. **On Legion:** Verify GPU inference in logs:
    ```bash
@@ -392,8 +392,8 @@ ssh agni
 # 2. Stop Vaultwarden container
 docker stop vaultwarden
 
-# 3. Restore data directory from local pCloud cache or rclone pull
-docker exec backup-agni rclone sync pcloud:Backups/Krynet-Agni/vaultwarden /data/vaultwarden --config /config/rclone.conf
+# 3. Restore data directory from pCloud using host rclone:
+rclone sync pcloud:Backups/Krynet-Agni/vaultwarden /home/agni/apps/docker/vaultwarden --config /home/agni/apps/docker/rclone/rclone.conf
 
 # 4. Start Vaultwarden
 docker start vaultwarden

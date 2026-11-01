@@ -10,14 +10,19 @@
 
 | Document | Description | Last Updated |
 |----------|-------------|--------------|
+| [**🔁 handoff/HANDOFF.md**](handoff/HANDOFF.md) | **Start here** — current state, open incidents, queue. With [PLAN](handoff/PLAN.md), [PROGRESS](handoff/PROGRESS.md), [TRAPS](handoff/TRAPS.md), [RESUME-PROMPT](handoff/RESUME-PROMPT.md) | Oct 2026 |
 | [**README.md**](../README.md) | Project overview, node topology, and architecture | Aug 2026 |
 | [**AGENTS.md**](../AGENTS.md) | 🤖 Universal Fleet AI Agent Operating Guidelines | Aug 2026 |
 | [**HOME-SERVER-REDESIGN.md**](HOME-SERVER-REDESIGN.md) | 🌌 3-Node Architecture Redesign & Agent Blueprint | Aug 2026 |
-| [**REDESIGN-PROGRESS.md**](REDESIGN-PROGRESS.md) | 📊 Execution Progress & Live Service Status | Aug 2026 |
+| [**REDESIGN-PROGRESS.md**](REDESIGN-PROGRESS.md) | 📊 *Historical* — Aug 2026 redesign log; live progress is [handoff/PROGRESS.md](handoff/PROGRESS.md) | Aug 2026 |
 | [**AGNI-SERVER.md**](AGNI-SERVER.md) | 🔥 Network Core & Ingress documentation (`192.168.0.200`) | Aug 2026 |
 | [**PRIME-SERVER.md**](PRIME-SERVER.md) | 🌟 Storage Vault & Media Hub documentation (`192.168.0.100`) | Aug 2026 |
 | [**LEGION-SERVER.md**](LEGION-SERVER.md) | ⚡ AI, GPU & Compute Engine documentation (`192.168.0.150`) | Aug 2026 |
 | [**AI-STACK.md**](AI-STACK.md) | 🤖 AI Supercomputing Stack (Ollama + LiteLLM + OpenWebUI) | Aug 2026 |
+| [**SMART-HOME-DEVICE-INVENTORY.md**](SMART-HOME-DEVICE-INVENTORY.md) | 🔌 **Plug/strip/light power tree, IP+MAC inventory, naming & label contract, energy model** | Sep 2026 |
+| [**HOME-ASSISTANT-DEVICE-RESILIENCE-GUIDE.md**](HOME-ASSISTANT-DEVICE-RESILIENCE-GUIDE.md) | ⚡ Multi-Ecosystem Power Resilience & Device Onboarding Guide | Aug 2026 |
+| [**HOME-ASSISTANT-DISASTER-RECOVERY-AND-MIGRATION-RUNBOOK.md**](HOME-ASSISTANT-DISASTER-RECOVERY-AND-MIGRATION-RUNBOOK.md) | 🛟 HA Disaster Recovery, Full-System Migration & AI Stack Runbook | Aug 2026 |
+| [**2026-11-NETWORK-SPEED-AND-TOPOLOGY-AUDIT.md**](2026-11-NETWORK-SPEED-AND-TOPOLOGY-AUDIT.md) | 🌐 Fleet Speed, Topology & EasyMesh Ethernet Backhaul Audit | Nov 2026 |
 | [**OPERATIONS-PLAYBOOK.md**](OPERATIONS-PLAYBOOK.md) | 🛠️ Multi-Node Ops runbooks, FAQ & incident resolution | Aug 2026 |
 
 ### Technical Deep Dives, Upgrades & Plans
@@ -25,9 +30,12 @@
 | Document | Description |
 |----------|-------------|
 | [**plans/README.md**](plans/README.md) | 📋 Fleet Strategic Plans & Architecture Transformations |
-| [**plans/2026-08-FLEET-ROADMAP-AND-ENHANCEMENTS.md**](plans/2026-08-FLEET-ROADMAP-AND-ENHANCEMENTS.md) | 🗺️ Master Roadmap (3-2-1 Backups, Observability, Media Pipeline) |
+| [**plans/2026-08-FLEET-MASTER-ROADMAP.md**](plans/2026-08-FLEET-MASTER-ROADMAP.md) | 🗺️ Master Strategic Roadmap, Audit Resolutions & Future Pillars |
+| [**plans/2026-08-HOME-ASSISTANT-SMART-HOME-PLAN.md**](plans/2026-08-HOME-ASSISTANT-SMART-HOME-PLAN.md) | 🏡 Home Assistant & Smart Home Device Architecture Plan |
+| [**plans/2026-08-MEDIA-PIPELINE-AND-AUTOMATION-PLAN.md**](plans/2026-08-MEDIA-PIPELINE-AND-AUTOMATION-PLAN.md) | 🎬 Media Pipeline, Storage, TRaSH & Subtitle AI Plan |
 | [**plans/2026-08-NETWORKING-ARCHITECTURE-PLAN.md**](plans/2026-08-NETWORKING-ARCHITECTURE-PLAN.md) | 🌐 Networking Review, Tailscale Remediation & Zero-Trust Plan |
 | [**upgrades/README.md**](upgrades/README.md) | 🚀 Fleet Upgrades & Major Migrations Index |
+| [**upgrades/2026-08-FLEET-AUDIT-HARDENING-AND-METRICS.md**](upgrades/2026-08-FLEET-AUDIT-HARDENING-AND-METRICS.md) | 🛠️ Fleet Audit, Infrastructure Hardening & Advanced Telemetry Upgrade |
 | [**upgrades/2026-08-IMMICH-V3-UPGRADE.md**](upgrades/2026-08-IMMICH-V3-UPGRADE.md) | 📸 Immich v2 ➔ v3 & VectorChord Migration Guide |
 | [**HOME-SERVER-REDESIGN.md**](HOME-SERVER-REDESIGN.md) | 🌌 3-Node distributed architecture & agentic fleet blueprint |
 | [**networking.md**](networking.md) | Complete networking architecture & split-horizon DNS |
@@ -53,11 +61,17 @@ docs/
 ├── services.md                # Deep dive: services
 ├── plans/                     # 📋 Strategic Architecture Plans & Blueprints
 │   ├── README.md              # Plans Directory Index
-│   ├── 2026-08-FLEET-ROADMAP-AND-ENHANCEMENTS.md # Master Roadmap & Enhancements
-│   └── 2026-08-NETWORKING-ARCHITECTURE-PLAN.md   # Networking Transformation Plan
-└── upgrades/                  # 🚀 Fleet Upgrade Records & Migration History
-    ├── README.md              # Upgrade SOP & History Index
-    └── 2026-08-IMMICH-V3-UPGRADE.md # Immich v3 & VectorChord Migration
+│   ├── 2026-08-FLEET-MASTER-ROADMAP.md # Master Roadmap & Governance
+│   ├── 2026-08-HOME-ASSISTANT-SMART-HOME-PLAN.md # Smart Home Blueprint
+│   ├── 2026-08-MEDIA-PIPELINE-AND-AUTOMATION-PLAN.md # Media Pipeline Blueprint
+│   └── 2026-08-NETWORKING-ARCHITECTURE-PLAN.md # Networking Transformation Plan
+├── upgrades/                  # 🚀 Fleet Upgrade Records & Migration History
+│   ├── README.md              # Upgrade SOP & History Index
+│   ├── 2026-08-FLEET-AUDIT-HARDENING-AND-METRICS.md # Fleet Audit & Telemetry Upgrade
+│   └── 2026-08-IMMICH-V3-UPGRADE.md # Immich v3 & VectorChord Migration
+└── archive/                   # 📦 Archived Historical Documentation & Intermediate Notes
+    ├── agni/                  # Historical Agni migration notes & early drafts
+    └── plans/                 # Superseded roadmap and audit drafts
 ```
 
 ---

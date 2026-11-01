@@ -26,13 +26,27 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/24,172.16.3.0/24 # Adjust to your network
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/24,100.64.0.0/10,172.16.0.0/16 # LAN, Tailscale, Docker subnets
       - FIREWALL_INPUT_PORTS=8080,6881,8081,8191,5055,6969 # Ports for services
       - VPN_SERVICE_PROVIDER=surfshark
       - VPN_TYPE=wireguard
       - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
       - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
       - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - SERVER_CITIES=Singapore
+      - WIREGUARD_PERSISTENT_KEEPALIVE_INTERVAL=25s # Prevents NAT timeouts on router/ISP
+      - UPDATER_PERIOD=24h # Auto-refreshes Surfshark server endpoints daily
+    healthcheck:
+      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   # --- Download Clients (Routed through Gluetun) ---
@@ -41,7 +55,8 @@ services:
     container_name: qbittorrent
     network_mode: service:gluetun
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
     volumes:
       - ${DOCKER_CONFIG_PATH}/qbittorrent:/config
       - ${DOCKER_DATA_PATH}:/data # Pointing to the new top-level downloads folder
@@ -50,6 +65,11 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
       - WEBUI_PORT=8080
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   sabnzbd:
@@ -71,6 +91,17 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/api?mode=version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   # --- Cloudflare Bypass Proxy ---
@@ -82,6 +113,17 @@ services:
     environment:
       - LOG_LEVEL=info
       - TZ=${TZ}
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8191/\")' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - kry_net
@@ -99,6 +141,17 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9696/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - kry_net
@@ -121,6 +174,17 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - kry_net
@@ -142,26 +206,50 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7878/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - kry_net
       - traefik_proxy
 
-  # readarr:
-  #   image: lscr.io/linuxserver/readarr:latest
-  #   container_name: readarr
-  #   ports:
-  #     - "8787:8787"
-  #   volumes:
-  #     - ${DOCKER_CONFIG_PATH}/readarr:/config
-  #     - ${DOCKER_DOWNLOADS_PATH}:/downloads      # For torrents
-  #     - ${DOCKER_USENET_PATH}/complete:/usenet   # For usenet
-  #     - ${DOCKER_MEDIA_PATH}/Books:/books        # MODIFIED: Path for Books
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #     - TZ=${TZ}
-  #   restart: unless-stopped
+  chaptarr:
+    image: chaptarr/chaptarr:latest
+    container_name: chaptarr
+    ports:
+      - "8789:8789"
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/chaptarr:/config
+      - ${DOCKER_DATA_PATH}:/data
+      - /mnt/andromeda/media/audiobooks:/audiobooks
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8789/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    networks:
+      - kry_net
+      - traefik_proxy
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
@@ -179,10 +267,39 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6767/api/swagger.json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - kry_net
       - traefik_proxy
+
+  # --- TRaSH Guides Declarative Automation ---
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:8
+    container_name: recyclarr
+    restart: unless-stopped
+    networks:
+      - kry_net
+    volumes:
+      - ${DOCKER_CONFIG_PATH}/recyclarr:/config
+    environment:
+      - TZ=${TZ}
+      - CRON_SCHEDULE=0 3 * * * # Runs daily at 3:00 AM
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # --- Media Server ---
   jellyfin:
@@ -201,37 +318,52 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
+      # Existing mobile clients were discovered against this hostname; left deliberately.
       - JELLYFIN_PublishedServerUrl=media.krynet.cc
     devices:
       - /dev/dri:/dev/dri
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
     networks:
       - kry_net
       - traefik_proxy
 
-  # --- Request Manager ---
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
-    network_mode: service:gluetun # This is the magic line!
+  # --- Request Manager (Seerr v3 - Unified Overseerr & Jellyseerr) ---
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    network_mode: service:gluetun
     depends_on:
-      - gluetun
-    # networks:
-    #   - kry_net
-    #   - traefik_proxy
-    # ports:
-    #   - "5055:5055"
-    # dns:
-    #   - 1.1.1.1  # Cloudflare DNS
-    #   - 8.8.8.8  # Google DNS
+      gluetun:
+        condition: service_healthy
     volumes:
       - ${DOCKER_CONFIG_PATH}/jellyseerr:/app/config
     environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
       - TZ=${TZ}
       - LOG_LEVEL=info
       - PORT=5055
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/settings/public || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   #Whisparr
@@ -244,11 +376,17 @@ services:
       - kry_net
       - traefik_proxy
     restart: unless-stopped
-    # logging:
-    #   driver: json-file
-    #   options:
-    #     max-file: ${DOCKERLOGGING_MAXFILE}
-    #     max-size: ${DOCKERLOGGING_MAXSIZE}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6969/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -265,10 +403,9 @@ services:
     restart: unless-stopped
     networks:
       - kry_net
-      - traefik_proxy
     ports:
-      - "8265:8265" # WebUI
-      - "8266:8266" # Server
+      - "8267:8265" # WebUI (8265 held in Prime dockerd bitmap)
+      - "8268:8266" # Server (8266 held in Prime dockerd bitmap)
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -276,13 +413,26 @@ services:
       - serverIP=0.0.0.0
       - serverPort=8266
       - webUIPort=8265
+      - serverBindIP=true
+      - internalNode=false
+    healthcheck:
+      test: ["CMD-SHELL", "node -e 'require(\"http\").get(\"http://localhost:8265/\", (res) => process.exit(res.statusCode === 200 ? 0 : 1))' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 240s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
       - ${DOCKER_CONFIG_PATH}/tdarr/server:/app/server
       - ${DOCKER_CONFIG_PATH}/tdarr/configs:/app/configs
       - ${DOCKER_CONFIG_PATH}/tdarr/logs:/app/logs
       
       - ${DOCKER_DATA_PATH}:/data # Your unified media path
-      - ${DOCKER_TRANSCODE_CACHE}:/temp # Your transcode cache
+      - ${DOCKER_DATA_PATH}/tdarr-temp:/temp # Shared transcode cache
 
   tdarr-node:
     image: ghcr.io/haveagitgat/tdarr_node:latest
@@ -302,12 +452,23 @@ services:
       - serverPort=8266
       - NVIDIA_DRIVER_CAPABILITIES=all
       - NVIDIA_VISIBLE_DEVICES=all
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f Tdarr_Node || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     volumes:
 
       - ${DOCKER_CONFIG_PATH}/tdarr/configs:/app/configs
       - ${DOCKER_CONFIG_PATH}/tdarr/logs-node:/app/logs
       - ${DOCKER_DATA_PATH}:/data # Your unified media path
-      - ${DOCKER_CONFIG_PATH}/temp:/temp # Your transcode cache
+      - ${DOCKER_DATA_PATH}/tdarr-temp:/temp # Shared transcode cache
     deploy:
       resources:
         limits:

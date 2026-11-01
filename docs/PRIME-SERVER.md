@@ -75,7 +75,7 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 | **OS** | TrueNAS SCALE (Dragonfish 24.10) |
 | **Network** | 1Gbps Ethernet |
 | **IP Address** | 192.168.0.100 (Static) |
-| **Web UI** | https://server.krynet.cc or port 88 |
+| **Web UI** | https://server.lan.kkasbi.in or port 88 |
 
 ---
 
@@ -109,21 +109,20 @@ Prime is the **powerhouse** of the KryNet Homelab, serving as the primary storag
 │   ├── rclone/
 │   └── ... (30+ services)
 │
-├── data/                     # Media pipeline data
-│   ├── media/                # Organized media library
-│   │   ├── movies/
-│   │   ├── series/
-│   │   ├── anime/
-│   │   └── documentaries/
-│   ├── downloads/            # Active downloads
-│   │   ├── torrents/
-│   │   │   ├── tv/
-│   │   │   ├── movies/
-│   │   │   └── incomplete/
-│   │   └── usenet/
-│   │       ├── complete/
-│   │       └── incomplete/
-│   └── tdarr-cache/          # Transcode temporary files
+├── data/                     # Single Parent ZFS Dataset (Zero-Copy Hardlinks)
+│   ├── media/                # Organized media library (Standard Directory)
+│   │   ├── movies/           # 565 GB
+│   │   ├── series/           # 176 GB
+│   │   ├── anime/            # 181 GB
+│   │   └── documentaries/    # 89 GB
+│   ├── torrents/             # Torrent downloads (Standard Directory)
+│   │   ├── complete/         # 186 GB (Zero-copy hardlinked into /media)
+│   │   └── incomplete/
+│   ├── usenet/               # Usenet downloads (Standard Directory)
+│   │   ├── complete/
+│   │   └── incomplete/
+│   └── tdarr-temp/           # Shared NFS GPU transcode cache
+
 
 /mnt/andromeda/
 ├── apps/
@@ -200,13 +199,13 @@ SPEEDTEST_APP_KEY=base64:...
 
 | Stack File | Services |
 |------------|----------|
-| `media-stack.yml` | Gluetun, qBittorrent, SABnzbd, FlareSolverr, Prowlarr, Sonarr, Radarr, Bazarr, Jellyfin, Jellyseerr, Whisparr, Tdarr |
+| `media-stack.yml` | Gluetun, qBittorrent, SABnzbd, FlareSolverr, Prowlarr, Sonarr, Radarr, Chaptarr, Bazarr, Recyclarr, Jellyfin, Seerr (v3), Whisparr, Tdarr |
 | `immich.yml` | Immich Server, ML, Redis, PostgreSQL, Power Tools |
 | `dns-stack.yml` | AdGuard Home (Secondary) |
 | `monitoring-sensors.yml` | Dozzle, Node Exporter, cAdvisor, Docker Socket Proxy, Portainer Agent |
-| `audiobookshelf.yml` | Audiobookshelf |
+| `audiobookshelf-stack.yml` | Audiobookshelf, Libation Headless |
+| `vpn-watchdog.yml` | VPN Watchdog (Gluetun health probe & dependent cascading restarts) |
 | `speedtest.yml` | OpenSpeedTest, Speedtest Tracker |
-| `homarr.yml` | Homarr Dashboard |
 | `rclone-stack.yml` | Rclone Backup |
 | `tailscale.yml` | Tailscale VPN |
 
@@ -263,7 +262,7 @@ SPEEDTEST_APP_KEY=base64:...
 
 #### Jellyseerr (Request Interface)
 **Port:** 5055 (via Gluetun)  
-**Access:** `https://request.krynet.cc`
+**Access:** `https://request.lan.kkasbi.in`
 
 User-friendly media request portal:
 - Family members request content
@@ -273,7 +272,7 @@ User-friendly media request portal:
 
 #### Prowlarr (Indexer Manager)
 **Port:** 9696  
-**Access:** `https://indexer.krynet.cc` (Admin only)
+**Access:** `https://indexer.lan.kkasbi.in` (Admin only)
 
 Centralized indexer management:
 - FlareSolverr integration for Cloudflare bypass
@@ -282,7 +281,7 @@ Centralized indexer management:
 
 #### Sonarr (TV Automation)
 **Port:** 8989  
-**Access:** `https://sonarr.krynet.cc` (Admin only)
+**Access:** `https://sonarr.lan.kkasbi.in` (Admin only)
 
 TV show management:
 - Automatic downloads
@@ -292,7 +291,7 @@ TV show management:
 
 #### Radarr (Movie Automation)
 **Port:** 7878  
-**Access:** `https://radarr.krynet.cc` (Admin only)
+**Access:** `https://radarr.lan.kkasbi.in` (Admin only)
 
 Movie management:
 - Automatic downloads
@@ -301,7 +300,7 @@ Movie management:
 
 #### Bazarr (Subtitles)
 **Port:** 6767  
-**Access:** `https://bazarr.krynet.cc` (Admin only)
+**Access:** `https://bazarr.lan.kkasbi.in` (Admin only)
 
 Automatic subtitle downloads:
 - OpenSubtitles integration
@@ -320,7 +319,7 @@ Kill switch protection:
 
 #### qBittorrent (Torrent Client)
 **Port:** 8080 (via Gluetun)  
-**Access:** `https://qb.krynet.cc` (Admin only)
+**Access:** `https://qb.lan.kkasbi.in` (Admin only)
 
 Configuration:
 - Download path: `/data/downloads/torrents`
@@ -329,7 +328,7 @@ Configuration:
 
 #### SABnzbd (Usenet Client)
 **Port:** 8085  
-**Access:** `https://nzb.krynet.cc` (Admin only)
+**Access:** `https://nzb.lan.kkasbi.in` (Admin only)
 
 Usenet downloading:
 - Provider: Your Usenet provider
@@ -338,7 +337,7 @@ Usenet downloading:
 
 #### Tdarr (GPU Transcoding)
 **Port:** 8265  
-**Access:** `https://tdarr.krynet.cc` (Admin only)
+**Access:** `https://tdarr.lan.kkasbi.in` (Admin only)
 
 H.265/HEVC conversion:
 - 40% space savings
@@ -348,7 +347,7 @@ H.265/HEVC conversion:
 
 #### Jellyfin (Media Server)
 **Port:** 8096  
-**Access:** `https://media.krynet.cc`
+**Access:** `https://media.lan.kkasbi.in`
 
 Streaming platform:
 - Hardware transcoding (Intel QSV + NVIDIA)
@@ -430,9 +429,9 @@ environment:
 
 | URL | Purpose |
 |-----|---------|
-| `https://photos.krynet.cc` | Public access (OAuth) |
+| `https://photos.lan.kkasbi.in` | Public access (OAuth) |
 | `https://photos.lan.kkasbi.in` | LAN access |
-| `https://ipt.krynet.cc` | Power Tools (bulk edits) |
+| `https://ipt.lan.kkasbi.in` | Power Tools (bulk edits) |
 
 ---
 
@@ -475,7 +474,7 @@ Remote container management:
 
 ### Dozzle (Log Viewer)
 **Port:** 8088  
-**Access:** `https://logs.krynet.cc`
+**Access:** `https://logs.lan.kkasbi.in`
 
 Real-time log streaming for Prime containers.
 
@@ -485,7 +484,7 @@ Real-time log streaming for Prime containers.
 
 ### Rclone to pCloud
 
-**Healthcheck:** `hc.krynet.cc` ping on completion
+**Healthcheck:** `hc.lan.kkasbi.in` ping on completion
 
 **Backup Targets:**
 
@@ -509,7 +508,7 @@ Real-time log streaming for Prime containers.
 
 ### AdGuard Home (Secondary DNS)
 **Port:** 53 (DNS), 7000 (Web UI)  
-**Access:** `https://adguard.krynet.cc`
+**Access:** `https://adguard.lan.kkasbi.in`
 
 Secondary DNS server (synced from Agni primary via AdGuard Home Sync):
 - Split-horizon DNS rewrites
@@ -532,7 +531,7 @@ environment:
 ## 🔧 Maintenance & Operations
 
 ### Common Commands
-> **Note on Stack Management:** Deploy, update, and manage services via **Portainer Stacks** (`https://portainer.krynet.cc` or Agni Master) using `stacks/prime/`. Use terminal access for diagnostics, ZFS management, backups, and log inspections.
+> **Note on Stack Management:** Deploy, update, and manage services via **Portainer Stacks** (`https://portainer.lan.kkasbi.in` or Agni Master) using `stacks/prime/`. Use terminal access for diagnostics, ZFS management, backups, and log inspections.
 
 ```bash
 # TrueNAS Shell access (Passwordless ED25519)
@@ -661,6 +660,7 @@ docker exec immich_postgres pg_isready
 | 8191 | FlareSolverr | TCP |
 | 8265 | Tdarr WebUI | TCP |
 | 8266 | Tdarr Server | TCP |
+| 8789 | Chaptarr WebUI | TCP |
 | 8989 | Sonarr | TCP |
 | 8992 | OpenSpeedTest | TCP |
 | 9001 | Portainer Agent | TCP |
@@ -671,9 +671,9 @@ docker exec immich_postgres pg_isready
 
 ---
 
-**Last Updated:** August 2026  
+**Last Updated:** November 2026  
 **Server IP:** 192.168.0.100  
 **OS:** TrueNAS SCALE Dragonfish 24.10  
 **Storage:** ~6TB (2x ZFS mirrored pools)  
-**Services:** 25+ containers  
-**Role:** Storage Hub + Media Center
+**Services:** 39 containers (33 reporting healthy)  
+**Role:** Storage Hub + Media Center & Audiobook Vault

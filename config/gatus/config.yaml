@@ -1,7 +1,10 @@
+# 🔴 SECRETS ARE ENV REFS, NEVER LITERALS. Gatus expands ${VAR} from its container
+# environment; the values live only in the Portainer stack env for monitoring-stack.
+# Both were literal here until 2026-09-12 and are in git history, so both were rotated.
 alerting:
   gotify:
     server-url: "http://gotify:80"
-    token: ""
+    token: "${GOTIFY_TOKEN}"
     priority: 5
     default-alert:
       description: "health-check failed"
@@ -10,7 +13,7 @@ alerting:
       success-threshold: 2
       minimum-reminder-interval: 1h
   discord:
-    webhook-url: "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"
+    webhook-url: "${DISCORD_WEBHOOK_URL}"
     default-alert:
       description: "health-check failed"
       send-on-resolved: true
@@ -34,6 +37,8 @@ endpoints:
       - "[CONNECTED] == true"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
@@ -47,6 +52,45 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  - name: "Caddy (Ingress)"
+    group: "Core"
+    # 🔴 Caddy runs network_mode: host, so it is NOT reachable as `caddy:443` from
+    # agni_net — probe Agni's host port directly. A raw TCP check deliberately, so this
+    # isolates "the ingress is down" from "one backend is down"; the ~30 https checks
+    # already exercise Caddy indirectly and would all fail together.
+    url: "tcp://192.168.0.200:443"
+    interval: 30s
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
+
+  - name: "Gatus (Self)"
+    group: "Core"
+    # ⚠️ A self-check catches Gatus DEGRADED (process up, checks wedged) but CANNOT
+    # catch Gatus dead — nothing runs to notice. Total death needs an external
+    # watcher; the intended one is a Healthchecks dead-man's switch that only gets
+    # pinged while /health returns UP. Not yet wired — see docs.
+    url: "http://192.168.0.200:3001/health"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].status == UP"
+    alerts:
+      - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
@@ -59,9 +103,24 @@ endpoints:
       - "[CONNECTED] == true"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
+
+  # Standard tier. CPU averaged >90 °C for 15 min, OR the sensor stopped reporting —
+  # an empty Prometheus answer must not read as "cool". Legion sat at 95-100 °C for weeks unseen.
+  - name: "Legion Thermals (CPU)"
+    group: "Core"
+    url: "http://192.168.0.200:9090/api/v1/query?query=avg_over_time%28node_hwmon_temp_celsius%7Binstance%3D~%22192.168.0.150%3A.%2A%22%2Cchip%3D%22platform_coretemp_0%22%2Csensor%3D%22temp1%22%7D%5B15m%5D%29%20%3E%2090%20or%20absent%28node_hwmon_temp_celsius%7Binstance%3D~%22192.168.0.150%3A.%2A%22%2Cchip%3D%22platform_coretemp_0%22%2Csensor%3D%22temp1%22%7D%29"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+      - "len([BODY].data.result) == 0"
+    alerts:
+      - type: gotify
+      - type: discord
 
   # =================================================
   # 🔐 SECURITY (Critical tier)
@@ -74,6 +133,8 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 5   # standard tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
@@ -90,6 +151,8 @@ endpoints:
       - "[BODY] == pat(*Home Assistant*)"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
@@ -102,6 +165,8 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
@@ -114,9 +179,21 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
         failure-threshold: 2
         minimum-reminder-interval: 30m
+
+  - name: "Frigate NVR"
+    group: "Smart Home"
+    url: "http://192.168.0.150:5000/api/version"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
 
   # =================================================
   # 🍿 MEDIA & PHOTOS (Standard tier — uses defaults)
@@ -133,17 +210,19 @@ endpoints:
 
   - name: "Immich Photos"
     group: "Media"
-    url: "http://192.168.0.100:2283/server/ping"
+    url: "http://192.168.0.100:2283/api/server/ping"
     interval: 5m
     conditions:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
       - type: discord
 
   - name: "Tdarr (Transcoding)"
     group: "Media"
-    url: "http://192.168.0.100:8265"
+    url: "http://192.168.0.100:8267"
     interval: 5m
     conditions:
       - "[STATUS] == 200"
@@ -154,6 +233,16 @@ endpoints:
   - name: "Audiobookshelf"
     group: "Media"
     url: "http://192.168.0.100:13378"
+    interval: 5m
+    conditions:
+      - "[STATUS] == 200"
+    alerts:
+      - type: gotify
+      - type: discord
+
+  - name: "Chaptarr"
+    group: "Media"
+    url: "http://192.168.0.100:8789/ping"
     interval: 5m
     conditions:
       - "[STATUS] == 200"
@@ -243,6 +332,8 @@ endpoints:
       - "[BODY] == pat(*FlareSolverr*)"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 2   # silent tier
       - type: discord
 
 
@@ -286,6 +377,19 @@ endpoints:
       - type: gotify
       - type: discord
 
+  # The exporter answers 200 with NO GPU metrics when the driver is gone or a container lost
+  # the device (2026-09-30), so the body is what proves the GPU is reachable.
+  - name: "Legion GPU (Driver)"
+    group: "AI Stack"
+    url: "http://192.168.0.150:9835/metrics"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == pat(*nvidia_smi_temperature_gpu*)"
+    alerts:
+      - type: gotify
+      - type: discord
+
   # =================================================
   # 📝 PRODUCTIVITY (Standard tier — uses defaults)
   # =================================================
@@ -308,6 +412,24 @@ endpoints:
     alerts:
       - type: gotify
       - type: discord
+
+  # =================================================
+  # 💰 FINANCE (Critical tier)
+  # =================================================
+  - name: "Nucleus Finance Core"
+    group: "Finance"
+    url: "http://192.168.0.100:8081/api/v1/health"
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].data.status == healthy"
+    alerts:
+      - type: gotify
+        provider-override:
+          priority: 8   # wake-me tier
+      - type: discord
+        failure-threshold: 2
+        minimum-reminder-interval: 30m
 
   # =================================================
   # 📥 DOWNLOADERS (Standard tier — uses defaults)
@@ -335,18 +457,6 @@ endpoints:
   # =================================================
   # 📊 DASHBOARDS (Low-priority tier)
   # =================================================
-  - name: "Homarr"
-    group: "Dashboards"
-    url: "http://192.168.0.100:7575"
-    interval: 5m
-    conditions:
-      - "[STATUS] == 200"
-    alerts:
-      - type: gotify
-      - type: discord
-        failure-threshold: 5
-        minimum-reminder-interval: 3h
-
   - name: "Homepage"
     group: "Dashboards"
     url: "http://192.168.0.200:3075"
@@ -367,6 +477,8 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 2   # silent tier
       - type: discord
         failure-threshold: 5
         minimum-reminder-interval: 3h
@@ -410,23 +522,13 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 2   # silent tier
       - type: discord
         failure-threshold: 5
         minimum-reminder-interval: 3h
 
-  - name: "Dozzle Logs (Prime)"
-    group: "Admin"
-    url: "http://192.168.0.100:8088"
-    interval: 10m
-    conditions:
-      - "[STATUS] == 200"
-    alerts:
-      - type: gotify
-      - type: discord
-        failure-threshold: 5
-        minimum-reminder-interval: 3h
-
-  - name: "Dozzle Logs (Agni)"
+  - name: "Dozzle Master Hub (Agni)"
     group: "Admin"
     url: "http://192.168.0.200:8088"
     interval: 10m
@@ -434,18 +536,36 @@ endpoints:
       - "[STATUS] == 200"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 2   # silent tier
       - type: discord
         failure-threshold: 5
         minimum-reminder-interval: 3h
 
-  - name: "Dozzle Logs (Legion)"
+  - name: "Dozzle Agent (Prime)"
     group: "Admin"
-    url: "http://192.168.0.150:8088"
+    url: "tcp://192.168.0.100:7007"
     interval: 10m
     conditions:
-      - "[STATUS] == 200"
+      - "[CONNECTED] == true"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 2   # silent tier
+      - type: discord
+        failure-threshold: 5
+        minimum-reminder-interval: 3h
+
+  - name: "Dozzle Agent (Legion)"
+    group: "Admin"
+    url: "tcp://192.168.0.150:7007"
+    interval: 10m
+    conditions:
+      - "[CONNECTED] == true"
+    alerts:
+      - type: gotify
+        provider-override:
+          priority: 2   # silent tier
       - type: discord
         failure-threshold: 5
         minimum-reminder-interval: 3h
@@ -458,6 +578,8 @@ endpoints:
       - "[CONNECTED] == true"
     alerts:
       - type: gotify
+        provider-override:
+          priority: 2   # silent tier
       - type: discord
         failure-threshold: 5
         minimum-reminder-interval: 3h
